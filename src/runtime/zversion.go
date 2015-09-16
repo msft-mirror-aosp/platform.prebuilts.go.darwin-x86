@@ -3,5 +3,7 @@
 package runtime
 
 const defaultGoroot = `/tmp/go`
-const theVersion = `go1.4.2`
+const theVersion = `go1.5.1`
+const goexperiment = ``
+const stackGuardMultiplier = 1
 var buildVersion = theVersion

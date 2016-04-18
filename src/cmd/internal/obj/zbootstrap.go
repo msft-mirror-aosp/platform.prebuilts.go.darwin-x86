@@ -4,7 +4,7 @@ package obj
 
 import "runtime"
 
-const defaultGOROOT = `/tmp/go`
+const defaultGOROOT = `./prebuilts/go/darwin-x86`
 const defaultGO386 = `sse2`
 const defaultGOARM = `7`
 const defaultGOOS = runtime.GOOS

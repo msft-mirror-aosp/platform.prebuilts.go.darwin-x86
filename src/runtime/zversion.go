@@ -2,7 +2,7 @@
 
 package runtime
 
-const defaultGoroot = `/tmp/go`
+const defaultGoroot = `./prebuilts/go/darwin-x86`
 const theVersion = `go1.5.1`
 const goexperiment = ``
 const stackGuardMultiplier = 1

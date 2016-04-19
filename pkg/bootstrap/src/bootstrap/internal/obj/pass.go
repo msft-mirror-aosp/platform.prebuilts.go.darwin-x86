@@ -1,6 +1,6 @@
-// Do not edit. Bootstrap copy of /tmp/go/src/cmd/internal/obj/pass.go
+// Do not edit. Bootstrap copy of /Volumes/Android/buildbot/src/android/build-tools/out/obj/go/src/cmd/internal/obj/pass.go
 
-//line /tmp/go/src/cmd/internal/obj/pass.go:1
+//line /Volumes/Android/buildbot/src/android/build-tools/out/obj/go/src/cmd/internal/obj/pass.go:1
 // Inferno utils/6l/pass.c
 // http://code.google.com/p/inferno-os/source/browse/utils/6l/pass.c
 //

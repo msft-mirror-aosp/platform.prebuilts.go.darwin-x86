@@ -1,7 +1,7 @@
 !<arch>
 __.PKGDEF       0           0     0     644     47832     `
 go object darwin amd64 go1.5.1 X:none
-build id "ff37f84d3ef54b75662ae0aec5535c02c9533c66"
+build id "13ddbbd814211cba81f35535ba534cebbd693def"
 
 $$
 package plugin
@@ -339,7 +339,7 @@ package plugin
 	func @"bufio".NewReaderSize (@"bufio".rdÂ·2 @"io".Reader, @"bufio".sizeÂ·3 int) (? *@"bufio".Reader) { var @"bufio".bÂ·4 *@"bufio".Reader; ; var @"bufio".okÂ·5 bool; ; @"bufio".bÂ·4, @"bufio".okÂ·5 = @"bufio".rdÂ·2.(*@"bufio".Reader); if @"bufio".okÂ·5 && len(@"bufio".bÂ·4.@"bufio".buf) >= @"bufio".sizeÂ·3 { return @"bufio".bÂ·4 }; if @"bufio".sizeÂ·3 < 0x10 { @"bufio".sizeÂ·3 = 0x10 }; var @"bufio".rÂ·6 *@"bufio".Reader; ; @"bufio".rÂ·6 = new(@"bufio".Reader); @"bufio".rÂ·6.@"bufio".reset(make([]byte, @"bufio".sizeÂ·3), @"bufio".rdÂ·2); return @"bufio".rÂ·6 }
 
 $$
-_go_.o          0           0     0     644     102121    `
+_go_.o          0           0     0     644     102425    `
 go object darwin amd64 go1.5.1 X:none
 
 !
@@ -348,22 +348,22 @@ fmt.aos.aregexp.astrings.atime.a8cmd/pprof/internal/profile.a ş"".NoObjToo
       H  "type."".noObjTool   ^  type."".ObjTool   v  >go.itab."".noObjTool."".ObjTool   °
   runtime.convT2I   ì
   0runtime.morestack_noctxt    p  "".autotmp_0000  "type."".noObjTool "".~r0  type."".ObjTool paop € ŠV 
- W) TgclocalsÂ·23e8278e2b69a3a75fa59b23c49ed6ad TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş""".noObjTool.Open  €  ôeH‹%    H;a†  Hƒì(1ÛH‰\$HH‰\$P1ÛH‰\$XH‰\$`H    H‰$è    H‹D$H-    H‰(HÇ@   H‰D$ H‹l$8H‰hH‹l$0€=     …   H‰hH‹-    H‰h H‹-    €=     ufH‰h(H‰D$ H‹    1íH9èt 1ÛH‰\$HH‰\$PH‹\$ H‰\$`H‰D$XHƒÄ(ÃH    H‰$H    H‰\$H    H‰\$è    H‹D$ë±L@(L‰$H‰l$è    H‹D$ ë…L@L‰$H‰l$è    H‹D$ éJÿÿÿè    éÆşÿÿ 
+ W) TgclocalsÂ·23e8278e2b69a3a75fa59b23c49ed6ad TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş""".noObjTool.Open  €  ôeH‹%    H;a†  Hƒì(1ÛH‰\$HH‰\$P1ÛH‰\$XH‰\$`H    H‰$è    H‹D$H-    H‰(HÇ@   H‰D$ H‹l$8H‰hH‹l$0€=     …   H‰hH‹-    H‰h H‹-    €=     ufH‰h(H‰D$ H‹    1íH9èt 1ÛH‰\$HH‰\$PH‹\$ H‰\$`H‰D$XHƒÄ(ÃH    H‰$H    H‰\$H    H‰\$è    H‹D$ë±L@(L‰$H‰l$è    H‹D$ ë…L@L‰$H‰l$è    H‹D$ éJÿÿÿè    éÆşÿÿ 
       d  "type.os.PathError   v
   "runtime.newobject      go.string."open"   Ö 6runtime.writeBarrierEnabled   ú  os.ErrNotExist    os.ErrNotExist   œ 6runtime.writeBarrierEnabled   Â  6go.itab.*os.PathError.error     $type.*os.PathError   ´  type.error   Ì  6go.itab.*os.PathError.error   à
    runtime.typ2Itab   ’
   .runtime.writebarrierptr   Ä
   .runtime.writebarrierptr   â
-  0runtime.morestack_noctxt   pP  "".autotmp_0002 $type.*os.PathError "".autotmp_0001  $type.*os.PathError "".~r3 Ptype.error "".~r2 0type."".ObjFile "".start  type.uint64 "".file  type.string P´OPt À –/  :µQ TgclocalsÂ·b767a85ad52475ddbcff98293d22a77d TgclocalsÂ·0c8aa8e80191a30eac23f1a218103f16   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş*"".noObjTool.Demangle  à  ØeH‹%    H;avVHƒì(1ÛH‰\$PH‰\$XH    H‰$HÇD$    HÇD$    HÇD$    è    H‹\$ H‰\$H1ÛH‰\$PH‰\$XHƒÄ(Ãè    ë”
+  0runtime.morestack_noctxt   pP  "".autotmp_0002 $type.*os.PathError "".autotmp_0001  $type.*os.PathError "".~r3 Ptype.error "".~r2 0type."".ObjFile "".start  type.uint64 "".file  type.string P´OPt À –/  :µQ TgclocalsÂ·b767a85ad52475ddbcff98293d22a77d TgclocalsÂ·0c8aa8e80191a30eac23f1a218103f16   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş*"".noObjTool.Demangle  à  ØeH‹%    H;avVHƒì(1ÛH‰\$PH‰\$XH    H‰$HÇD$    HÇD$    HÇD$    è    H‹\$ H‰\$H1ÛH‰\$PH‰\$XHƒÄ(Ãè    ë”
       D  ,type.map[string]string   Œ
   runtime.makemap   Ì
   0runtime.morestack_noctxt   `P  "".~r2 @type.error "".~r1 0,type.map[string]string "".name  type.[]string PQOP p F 
- E+ TgclocalsÂ·6432f8c6a0d23fa7bee6c5d96f21a92a TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş&"".noObjTool.Disasm  À  ¨eH‹%    H;av{Hƒì81ÛH‰\$`H‰\$hH‰\$p1ÛH‰\$xH‰œ$€   H    H‰$HÇD$   1ÛH‰\$H‰\$H‰\$ è    H‹L$(H‹D$01ÛH‰\$`H‰\$hH‰\$pH‰L$xH‰„$€   HƒÄ8Ãè    élÿÿÿ
+ E+ TgclocalsÂ·6432f8c6a0d23fa7bee6c5d96f21a92a TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş&"".noObjTool.Disasm  À  ¨eH‹%    H;av{Hƒì81ÛH‰\$`H‰\$hH‰\$p1ÛH‰\$xH‰œ$€   H    H‰$HÇD$   1ÛH‰\$H‰\$H‰\$ è    H‹L$(H‹D$01ÛH‰\$`H‰\$hH‰\$pH‰L$xH‰„$€   HƒÄ8Ãè    élÿÿÿ
       l  Jgo.string."disassembly not supported"   ²
   fmt.Errorf   –
   0runtime.morestack_noctxt   p  
 "".~r4 ptype.error "".~r3 @type.[]"".Inst "".end 0type.uint64 "".start  type.uint64 "".file  type.string pvop   ¦3W 
- XH TgclocalsÂ·4d8bed7e4976e3d095a9230e496231af TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş,"".noObjTool.SetConfig     Ã     "".config  type.string   °  TgclocalsÂ·3f5c1f818fa7055d0400cecd34057162 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş"".StandardUI  À  ¢eH‹%    H„$xÿÿÿH;A†¬  Hì  1ÛH‰œ$  H‰œ$  H‹    1íH9è„O  H‹    H‰„$ˆ   H‰ÃH‰”$   H‰D$hH‰T$pH‰ĞH‰”$€   HÇÂ   H‰\$x1íH9ëtH‹[H-    H9ë…ğ  HÇÁ   €ù „Â   H‹XH9ÓŒµ   H‰D$8H    H‰$è    H‹D$H‰D$PHƒø „…   H‹l$8€=     ubH‰(H‰D$PH‹    1íH9ètH‹\$PH‰œ$  H‰„$  HÄ  ÃH    H‰$H    H‰\$H    H‰\$è    H‹D$ë´H‰$H‰l$è    H‹D$PëŒ‰ étÿÿÿH‰T$0Hƒú}	HÇD$0   H    H‰$è    H‹L$0H‹D$H‰D$@H‰D$HH    H‰$H‰L$H‰L$è    L‹D$H‹t$ H‹l$(H‹T$xH‹Œ$€   H¼$°   1ÀHƒÇøè    L‰„$˜   L‰„$°   H‰´$    H‰´$¸   H‰¬$¨   H‰¬$À   H‰T$XH‰”$È   H‰L$`H‰Œ$Ğ   HÇ„$ø   ÿÿÿÿHÇ„$   ÿÿÿÿH‹\$HHƒû t,H¬$°   H‰\$H‰l$H-    H‰,$è    H‹D$@é1şÿÿ‰ëĞ1À1ÉéşÿÿH    H‰$H    H‰\$H    H‰\$è    H‹D$éıÿÿè    é/ıÿÿ2
+ XH TgclocalsÂ·4d8bed7e4976e3d095a9230e496231af TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş,"".noObjTool.SetConfig     Ã     "".config  type.string   °  TgclocalsÂ·3f5c1f818fa7055d0400cecd34057162 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş"".StandardUI  À  ¢eH‹%    H„$xÿÿÿH;A†¬  Hì  1ÛH‰œ$  H‰œ$  H‹    1íH9è„O  H‹    H‰„$ˆ   H‰ÃH‰”$   H‰D$hH‰T$pH‰ĞH‰”$€   HÇÂ   H‰\$x1íH9ëtH‹[H-    H9ë…ğ  HÇÁ   €ù „Â   H‹XH9ÓŒµ   H‰D$8H    H‰$è    H‹D$H‰D$PHƒø „…   H‹l$8€=     ubH‰(H‰D$PH‹    1íH9ètH‹\$PH‰œ$  H‰„$  HÄ  ÃH    H‰$H    H‰\$H    H‰\$è    H‹D$ë´H‰$H‰l$è    H‹D$PëŒ‰ étÿÿÿH‰T$0Hƒú}	HÇD$0   H    H‰$è    H‹L$0H‹D$H‰D$@H‰D$HH    H‰$H‰L$H‰L$è    L‹D$H‹t$ H‹l$(H‹T$xH‹Œ$€   H¼$°   1ÀHƒÇøè    L‰„$˜   L‰„$°   H‰´$    H‰´$¸   H‰¬$¨   H‰¬$À   H‰T$XH‰”$È   H‰L$`H‰Œ$Ğ   HÇ„$ø   ÿÿÿÿHÇ„$   ÿÿÿÿH‹\$HHƒû t,H¬$°   H‰\$H‰l$H-    H‰,$è    H‹D$@é1şÿÿ‰ëĞ1À1ÉéşÿÿH    H‰$H    H‰\$H    H‰\$è    H‹D$éıÿÿè    é/ıÿÿ2
       n  4go.itab.*os.File.io.Reader   ’  os.Stdin     $type.*bufio.Reader   ‚  type."".stdUI   ”
   "runtime.newobject   Ò 6runtime.writeBarrierEnabled   ö  .go.itab.*"".stdUI."".UI   Ì  type.*"".stdUI   â  type."".UI   ú  .go.itab.*"".stdUI."".UI   
    runtime.typ2Itab   ¸
@@ -378,26 +378,26 @@ fmt.aos.aregexp.astrings.atime.a8cmd/pprof/internal/profile.a ş"".NoObjToo
 
    runtime.typ2Itab   
   0runtime.morestack_noctxt      "".autotmp_0016  type.*uint8 "".autotmp_0015 ïtype.*"".stdUI "".autotmp_0014  $type.*bufio.Reader "".autotmp_0012 ÿtype.io.Reader "".autotmp_0011  type.*"".stdUI "".autotmp_0010 ¯"type.bufio.Reader bufio.rÂ·3 ßtype.io.Reader bufio.bufÂ·2 ßtype.[]uint8 bufio.bÂ·1 ÿ$type.*bufio.Reader bufio.rÂ·6 $type.*bufio.Reader bufio.sizeÂ·3 ¯type.int bufio.rdÂ·2 Ÿtype.io.Reader "".~r0 Ÿ$type.*bufio.Reader bufio.rdÂ·2 ¿type.io.Reader "".~r0  type."".UI "€½ à Ò4“ " É
-}G.¾?( TgclocalsÂ·0ff332170910c5e93471971e9f7c38ce TgclocalsÂ·05c207f7fc688fa364060a4cb61d85a2   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş("".(*stdUI).ReadLine  à  ÂeH‹%    H;a†„   Hƒì01ÛH‰\$@H‰\$H1ÛH‰\$PH‰\$XH‹    H‰$H    H‰\$HÇD$   è    H‹\$8H‹+H‰,$ÆD$
+}G.¾?( TgclocalsÂ·0ff332170910c5e93471971e9f7c38ce TgclocalsÂ·05c207f7fc688fa364060a4cb61d85a2   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş("".(*stdUI).ReadLine  à  ÂeH‹%    H;a†„   Hƒì01ÛH‰\$@H‰\$H1ÛH‰\$PH‰\$XH‹    H‰$H    H‰\$HÇD$   è    H‹\$8H‹+H‰,$ÆD$
 è    H‹l$H‹T$H‹L$ H‹D$(H‰l$@H‰T$HH‰L$PH‰D$XHƒÄ0Ãè    é_ÿÿÿ
       d  os.Stdout   z  (go.string."(pprof) "    
   ,os.(*File).WriteString   Ì
   4bufio.(*Reader).ReadString   °
   0runtime.morestack_noctxt   P`  "".~r1 0type.error "".~r0 type.string 
 "".ui  type.*"".stdUI `_` ° â/%C 
- Oa TgclocalsÂ·89fe65749ce0afc971c0982226501ff0 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş""".(*stdUI).Print  À  ®eH‹%    H;avAHƒì(H‹\$0H‰$H‹    H‰\$H‹\$8H‰\$H‹\$@H‰\$H‹\$HH‰\$ è    HƒÄ(Ãè    ë©
+ Oa TgclocalsÂ·89fe65749ce0afc971c0982226501ff0 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş""".(*stdUI).Print  À  ®eH‹%    H;avAHƒì(H‹\$0H‰$H‹    H‰\$H‹\$8H‰\$H‹\$@H‰\$H‹\$HH‰\$ è    HƒÄ(Ãè    ë©
       >  os.Stderr   
   $"".(*stdUI).fprint   ¢
   0runtime.morestack_noctxt   @P  "".args &type.[]interface {} 
 "".ui  type.*"".stdUI P<OP ` ì8 
- F TgclocalsÂ·0ebb2d1da58c1b4224bf5a7b370d7578 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş("".(*stdUI).PrintErr  À  ®eH‹%    H;avAHƒì(H‹\$0H‰$H‹    H‰\$H‹\$8H‰\$H‹\$@H‰\$H‹\$HH‰\$ è    HƒÄ(Ãè    ë©
+ F TgclocalsÂ·0ebb2d1da58c1b4224bf5a7b370d7578 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş("".(*stdUI).PrintErr  À  ®eH‹%    H;avAHƒì(H‹\$0H‰$H‹    H‰\$H‹\$8H‰\$H‹\$@H‰\$H‹\$HH‰\$ è    HƒÄ(Ãè    ë©
       >  os.Stderr   
   $"".(*stdUI).fprint   ¢
   0runtime.morestack_noctxt   @P  "".args &type.[]interface {} 
 "".ui  type.*"".stdUI P<OP ` ô8 
- F TgclocalsÂ·0ebb2d1da58c1b4224bf5a7b370d7578 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş,"".(*stdUI).IsTerminal     ÆD$ Ã     "".~r0 type.bool 
-"".ui  type.*"".stdUI   ş  TgclocalsÂ·3f5c1f818fa7055d0400cecd34057162 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş6"".(*stdUI).SetAutoComplete     Ã     
-"".ui  type.*"".stdUI   †  TgclocalsÂ·2a1dd1e1e59d0a384c26951e316cd7e6 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş$"".(*stdUI).fprint  à  ÎeH‹%    H;a†J  HƒìxH‹œ$   H‰$H‹œ$˜   H‰\$H‹œ$    H‰\$è    H‹|$H‹t$ H‰|$8H‰|$HH‰t$@L    L‰L$XHÇÀ   H‰t$PH‰D$`H9ÆŒØ   H‰óH)ÃH‰õH9ó‡¿   H)İI‰øHƒı tMH9Å…¢   L‰D$hL‰$H‰l$pH‰l$L‰L$H‰D$è    H‹|$8H‹t$@¶\$ H‰Ø< u@HÇ$    H‰|$hH‰|$H‰t$pH‰t$H    H‰\$HÇD$    è    H‹|$(H‹t$0H‹œ$ˆ   H‰$H‰|$8H‰|$H‰t$@H‰t$è    HƒÄxÃ1Àëè    1Àëƒè    é™şÿÿ
+ F TgclocalsÂ·0ebb2d1da58c1b4224bf5a7b370d7578 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş,"".(*stdUI).IsTerminal     ÆD$ Ã     "".~r0 type.bool 
+"".ui  type.*"".stdUI   ş  TgclocalsÂ·3f5c1f818fa7055d0400cecd34057162 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş6"".(*stdUI).SetAutoComplete     Ã     
+"".ui  type.*"".stdUI   †  TgclocalsÂ·2a1dd1e1e59d0a384c26951e316cd7e6 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş$"".(*stdUI).fprint  à  ÎeH‹%    H;a†J  HƒìxH‹œ$   H‰$H‹œ$˜   H‰\$H‹œ$    H‰\$è    H‹|$H‹t$ H‰|$8H‰|$HH‰t$@L    L‰L$XHÇÀ   H‰t$PH‰D$`H9ÆŒØ   H‰óH)ÃH‰õH9ó‡¿   H)İI‰øHƒı tMH9Å…¢   L‰D$hL‰$H‰l$pH‰l$L‰L$H‰D$è    H‹|$8H‹t$@¶\$ H‰Ø< u@HÇ$    H‰|$hH‰|$H‰t$pH‰t$H    H‰\$HÇD$    è    H‹|$(H‹t$0H‹œ$ˆ   H‰$H‰|$8H‰|$H‰t$@H‰t$è    HƒÄxÃ1Àëè    1Àëƒè    é™şÿÿ
       |
   fmt.Sprint   ¼  go.string."\n"   ”
    runtime.eqstring   †  go.string."\n"   ¬
@@ -405,7 +405,7 @@ fmt.aos.aregexp.astrings.atime.a8cmd/pprof/internal/profile.a ş"".NoObjToo
   ,os.(*File).WriteString   ¦
   $runtime.panicslice   ¼
   0runtime.morestack_noctxt   Pğ  "".autotmp_0027  type.string "".autotmp_0026 type.string "strings.suffixÂ·3 ?type.string strings.sÂ·2 _type.string "".text type.string "".args  &type.[]interface {} "".f type.*os.File 
-"".ui  type.*"".stdUI ğ¶ïğ" ğ &Š5˜@%  =ŒL[ TgclocalsÂ·956175074b3249e0865444212394b303 TgclocalsÂ·5e29cf4e275ff1db65cfee262b3b8d1f   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş"".init  à  ĞeH‹%    H;avR¶    €û t¶    €ûuÃè    Æ    è    è    è    è    è    è    è    Æ    Ãè    ë˜
+"".ui  type.*"".stdUI ğ¶ïğ" ğ &Š5˜@%  =ŒL[ TgclocalsÂ·956175074b3249e0865444212394b303 TgclocalsÂ·5e29cf4e275ff1db65cfee262b3b8d1f   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş"".init  à  ĞeH‹%    H;avR¶    €û t¶    €ûuÃè    Æ    è    è    è    è    è    è    è    Æ    Ãè    ë˜
       $  "".initdoneÂ·   <  "".initdoneÂ·   R
   "runtime.throwinit   b "".initdoneÂ·   n
   bufio.init   x
@@ -416,7 +416,7 @@ fmt.aos.aregexp.astrings.atime.a8cmd/pprof/internal/profile.a ş"".NoObjToo
   time.init   ª
   >cmd/pprof/internal/profile.init   ¶ "".initdoneÂ·   Ä
   0runtime.morestack_noctxt        p p ¬p 
- (H TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş("".(*noObjTool).Open à  ØeH‹%    H;a†  Hƒì`H‹Y H…ÛtH|$hH9;uH‰#1ÛH‰œ$ˆ   H‰œ$   1ÛH‰œ$˜   H‰œ$    H‹\$h1íH9ëuEH    H‰$HÇD$   H    H‰\$HÇD$	   H    H‰\$ HÇD$(   è    H    H‰$è    H‹D$Hƒ|$h „S  H‰D$8H‹l$xH‰hH‹l$p€=     …   H‰(H‹œ$€   1ÛH‰\$PH‰\$X1ÛH‰\$@H‰\$HH    H‰$è    H‹D$H-    H‰(HÇ@   H‹\$8H‰D$0L@L‰D$H‰\$H    H‰$è    H‹\$0H‹-    H‰k H‹-    €=     uwH‰k(H‹\$0H‰\$0H‹    1íH9èt,H‹L$01öH‰´$ˆ   H‰´$   H‰„$˜   H‰Œ$    HƒÄ`ÃH    H‰$H    H‰\$H    H‰\$è    H‹D$ë¥LC(L‰$H‰l$è    évÿÿÿH‰$H‰l$è    éĞşÿÿ‰%    é¡şÿÿè    éÔıÿÿ0
+ (H TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş("".(*noObjTool).Open à  ØeH‹%    H;a†  Hƒì`H‹Y H…ÛtH|$hH9;uH‰#1ÛH‰œ$ˆ   H‰œ$   1ÛH‰œ$˜   H‰œ$    H‹\$h1íH9ëuEH    H‰$HÇD$   H    H‰\$HÇD$	   H    H‰\$ HÇD$(   è    H    H‰$è    H‹D$Hƒ|$h „S  H‰D$8H‹l$xH‰hH‹l$p€=     …   H‰(H‹œ$€   1ÛH‰\$PH‰\$X1ÛH‰\$@H‰\$HH    H‰$è    H‹D$H-    H‰(HÇ@   H‹\$8H‰D$0L@L‰D$H‰\$H    H‰$è    H‹\$0H‹-    H‰k H‹-    €=     uwH‰k(H‹\$0H‰\$0H‹    1íH9èt,H‹L$01öH‰´$ˆ   H‰´$   H‰„$˜   H‰Œ$    HƒÄ`ÃH    H‰$H    H‰\$H    H‰\$è    H‹D$ë¥LC(L‰$H‰l$è    évÿÿÿH‰$H‰l$è    éĞşÿÿ‰%    é¡şÿÿè    éÔıÿÿ0
       À  $go.string."plugin"   è  *go.string."noObjTool"   ’   go.string."Open"   ¸
   "runtime.panicwrap   Ê  type.string   Ü
   "runtime.newobject   ° 6runtime.writeBarrierEnabled   ’  "type.os.PathError   ¤
@@ -444,22 +444,22 @@ fmt.aos.aregexp.astrings.atime.a8cmd/pprof/internal/profile.a ş"".NoObjToo
   runtime.strhash   ¸
   0runtime.morestack_noctxt   0P  
 "".autotmp_0039 type.int "".autotmp_0038 type.int "".~r2  type.uintptr "".h type.uintptr "".p  type.*[8]string POP ° ° 
- q? TgclocalsÂ·0b86ef39f3fed835f14ba5f4d7c62fa2 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş$type..eq.[8]string à  ÖeH‹%    H;a†Î   HƒìX1ÀHÇD$(   H‹l$(H9è’   H‰D$0H‹\$`Hƒû „–   H‰ÅHÁåHëH‹3H‹KH‹\$hHƒû tvH‰ÅHÁåHëH‹H‹CH9ÁuVH‰t$HH‰4$H‰L$PH‰L$H‰T$8H‰T$H‰D$@H‰D$è    ¶\$ €û t H‹D$0HÿÀH‹l$(H9èŒnÿÿÿÆD$pHƒÄXÃÆD$p HƒÄXÃ‰ë†‰écÿÿÿè    éÿÿÿ
+ q? TgclocalsÂ·0b86ef39f3fed835f14ba5f4d7c62fa2 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş$type..eq.[8]string à  ÖeH‹%    H;a†Î   HƒìX1ÀHÇD$(   H‹l$(H9è’   H‰D$0H‹\$`Hƒû „–   H‰ÅHÁåHëH‹3H‹KH‹\$hHƒû tvH‰ÅHÁåHëH‹H‹CH9ÁuVH‰t$HH‰4$H‰L$PH‰L$H‰T$8H‰T$H‰D$@H‰D$è    ¶\$ €û t H‹D$0HÿÀH‹l$(H9èŒnÿÿÿÆD$pHƒÄXÃÆD$p HƒÄXÃ‰ë†‰écÿÿÿè    éÿÿÿ
       ¼
    runtime.eqstring   Ä
-  0runtime.morestack_noctxt   0°  "".autotmp_0043 ?type.string "".autotmp_0042 type.string "".autotmp_0041 _type.int "".autotmp_0040 Otype.int "".~r2  type.bool "".q type.*[8]string "".p  type.*[8]string &°´¯°	¯° ğ ğ  S TgclocalsÂ·3bb21ca8fe1d99a3e492463bd711418a TgclocalsÂ·a8eabfc4a4514ed6b3b0c61e9680e440   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş$type..hash."".Inst    œeH‹%    H;a†ñ   Hƒì H‹\$(H‰$Hƒ<$ „Í   H‹\$0H‰\$HÇD$   è    H‹D$H‹\$(H‰$Hƒ<$ „   Hƒ$H‰D$0H‰D$è    H‹D$H‹\$(H‰$Hƒ<$ t^Hƒ$H‰D$0H‰D$è    H‹D$H‹\$(H‰$Hƒ<$ t,Hƒ$(H‰D$0H‰D$HÇD$   è    H‹\$H‰\$8HƒÄ Ã‰%    ëË‰%    ë™‰%    édÿÿÿ‰%    é'ÿÿÿè    éòşÿÿ
+  0runtime.morestack_noctxt   0°  "".autotmp_0043 ?type.string "".autotmp_0042 type.string "".autotmp_0041 _type.int "".autotmp_0040 Otype.int "".~r2  type.bool "".q type.*[8]string "".p  type.*[8]string &°´¯°	¯° ğ ğ  S TgclocalsÂ·3bb21ca8fe1d99a3e492463bd711418a TgclocalsÂ·a8eabfc4a4514ed6b3b0c61e9680e440   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş$type..hash."".Inst    œeH‹%    H;a†ñ   Hƒì H‹\$(H‰$Hƒ<$ „Í   H‹\$0H‰\$HÇD$   è    H‹D$H‹\$(H‰$Hƒ<$ „   Hƒ$H‰D$0H‰D$è    H‹D$H‹\$(H‰$Hƒ<$ t^Hƒ$H‰D$0H‰D$è    H‹D$H‹\$(H‰$Hƒ<$ t,Hƒ$(H‰D$0H‰D$HÇD$   è    H‹\$H‰\$8HƒÄ Ã‰%    ëË‰%    ë™‰%    édÿÿÿ‰%    é'ÿÿÿè    éòşÿÿ
       ~
   runtime.memhash   Ø
   runtime.strhash   ª
   runtime.strhash   
   runtime.memhash   Š
-  0runtime.morestack_noctxt   0@  "".~r2  type.uintptr "".h type.uintptr "".p  type.*"".Inst @Â?@6    >Ò TgclocalsÂ·0b86ef39f3fed835f14ba5f4d7c62fa2 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş type..eq."".Inst    „eH‹%    H;a†%  HƒìHH‹L$PH‹D$XH‹H‹(H9ët
+  0runtime.morestack_noctxt   0@  "".~r2  type.uintptr "".h type.uintptr "".p  type.*"".Inst @Â?@6    >Ò TgclocalsÂ·0b86ef39f3fed835f14ba5f4d7c62fa2 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş type..eq."".Inst    „eH‹%    H;a†%  HƒìHH‹L$PH‹D$XH‹H‹(H9ët
 ÆD$` HƒÄHÃH‹qH‹IH‹PH‹@H9Á…ß   H‰t$8H‰4$H‰L$@H‰L$H‰T$(H‰T$H‰D$0H‰D$è    ¶\$ €û „¥   H‹\$PHƒû „   H‹SH‹C H‹\$XHƒû txH‹sH‹K H9ÈuaH‰T$(H‰$H‰D$0H‰D$H‰t$8H‰t$H‰L$@H‰L$è    ¶\$ €û t+H‹l$PH‹](L‹D$XI‹h(H9ët
 ÆD$` HƒÄHÃÆD$`HƒÄHÃÆD$` HƒÄHÃ‰ë„‰éjÿÿÿÆD$` HƒÄHÃè    é¾şÿÿ
       î
    runtime.eqstring   À
    runtime.eqstring   ò
-  0runtime.morestack_noctxt   0  "".autotmp_0047  type.string "".autotmp_0046  type.string "".autotmp_0045 ?type.string "".autotmp_0044 type.string "".~r2  type.bool "".q type.*"".Inst "".p  type.*"".Inst JØ		 Ğ Ğ  vÚ TgclocalsÂ·3bb21ca8fe1d99a3e492463bd711418a TgclocalsÂ·a8eabfc4a4514ed6b3b0c61e9680e440   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş"".ObjFile.Base À  ¦eH‹%    H;av=HƒìH‹Y H…ÛtH|$H9;uH‰#H‹\$ H‰$H‹\$H‹[ ÿÓH‹\$H‰\$(HƒÄÃè    ë­
+  0runtime.morestack_noctxt   0  "".autotmp_0047  type.string "".autotmp_0046  type.string "".autotmp_0045 ?type.string "".autotmp_0044 type.string "".~r2  type.bool "".q type.*"".Inst "".p  type.*"".Inst JØ		 Ğ Ğ  vÚ TgclocalsÂ·3bb21ca8fe1d99a3e492463bd711418a TgclocalsÂ·a8eabfc4a4514ed6b3b0c61e9680e440   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş"".ObjFile.Base À  ¦eH‹%    H;av=HƒìH‹Y H…ÛtH|$H9;uH‰#H‹\$ H‰$H‹\$H‹[ ÿÓH‹\$H‰\$(HƒÄÃè    ë­
       v       š
   0runtime.morestack_noctxt   0   "".~r0  type.uint64 ""..this  type."".ObjFile  8  ` ` 
  ;% TgclocalsÂ·3bb21ca8fe1d99a3e492463bd711418a TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   <autogenerated>ş$"".ObjFile.BuildID à  ÒeH‹%    H;avSHƒìH‹Y H…ÛtH|$ H9;uH‰#1ÛH‰\$0H‰\$8H‹\$(H‰$H‹\$ H‹[(ÿÓH‹L$H‹D$H‰L$0H‰D$8HƒÄÃè    ë—
@@ -484,12 +484,12 @@ fmt.aos.aregexp.astrings.atime.a8cmd/pprof/internal/profile.a ş"".NoObjToo
   runtime.strhash   ¾
   runtime.strhash   ¢
   runtime.memhash   †
-  0runtime.morestack_noctxt   0@  "".~r2  type.uintptr "".h type.uintptr "".p  type.*"".Frame @Œ?@, Ğ Ğ  5› TgclocalsÂ·0b86ef39f3fed835f14ba5f4d7c62fa2 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş"type..eq."".Frame    šeH‹%    H;a†0  HƒìHH‹\$PHƒû „  H‹3H‹KH‹\$XHƒû „ù   H‹H‹CH9Á…ß   H‰t$8H‰4$H‰L$@H‰L$H‰T$(H‰T$H‰D$0H‰D$è    ¶\$ €û „¥   H‹\$PHƒû „   H‹SH‹CH‹\$XHƒû txH‹sH‹KH9ÈuaH‰T$(H‰$H‰D$0H‰D$H‰t$8H‰t$H‰L$@H‰L$è    ¶\$ €û t+H‹l$PH‹] L‹D$XI‹h H9ët
+  0runtime.morestack_noctxt   0@  "".~r2  type.uintptr "".h type.uintptr "".p  type.*"".Frame @Œ?@, Ğ Ğ  5› TgclocalsÂ·0b86ef39f3fed835f14ba5f4d7c62fa2 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş"type..eq."".Frame    šeH‹%    H;a†0  HƒìHH‹\$PHƒû „  H‹3H‹KH‹\$XHƒû „ù   H‹H‹CH9Á…ß   H‰t$8H‰4$H‰L$@H‰L$H‰T$(H‰T$H‰D$0H‰D$è    ¶\$ €û „¥   H‹\$PHƒû „   H‹SH‹CH‹\$XHƒû txH‹sH‹KH9ÈuaH‰T$(H‰$H‰D$0H‰D$H‰t$8H‰t$H‰L$@H‰L$è    ¶\$ €û t+H‹l$PH‹] L‹D$XI‹h H9ët
 ÆD$` HƒÄHÃÆD$`HƒÄHÃÆD$` HƒÄHÃ‰ë„‰éjÿÿÿÆD$` HƒÄHÃ‰é ÿÿÿ‰éãşÿÿè    é³şÿÿ
       è
    runtime.eqstring   º
    runtime.eqstring   ˆ
-  0runtime.morestack_noctxt   0  "".autotmp_0059  type.string "".autotmp_0058  type.string "".autotmp_0057 ?type.string "".autotmp_0056 type.string "".~r2  type.bool "".q type.*"".Frame "".p  type.*"".Frame >ô		 Ğ Ğ  sİ TgclocalsÂ·3bb21ca8fe1d99a3e492463bd711418a TgclocalsÂ·a8eabfc4a4514ed6b3b0c61e9680e440   ^/tmp/go/src/cmd/pprof/internal/plugin/plugin.goş&"".ObjTool.Demangle À  ¨eH‹%    H;av{Hƒì8H‹Y H…ÛtH|$@H9;uH‰#1ÛH‰\$pH‰\$xH‹\$PH‰\$H‹\$XH‰\$H‹\$`H‰\$H‹\$HH‰$H‹\$@H‹[ ÿÓH‹T$ H‹L$(H‹D$0H‰T$hH‰L$pH‰D$xHƒÄ8Ãè    élÿÿÿ
+  0runtime.morestack_noctxt   0  "".autotmp_0059  type.string "".autotmp_0058  type.string "".autotmp_0057 ?type.string "".autotmp_0056 type.string "".~r2  type.bool "".q type.*"".Frame "".p  type.*"".Frame >ô		 Ğ Ğ  sİ TgclocalsÂ·3bb21ca8fe1d99a3e492463bd711418a TgclocalsÂ·a8eabfc4a4514ed6b3b0c61e9680e440   ~prebuilts/go/darwin-x86/src/cmd/pprof/internal/plugin/plugin.goş&"".ObjTool.Demangle À  ¨eH‹%    H;av{Hƒì8H‹Y H…ÛtH|$@H9;uH‰#1ÛH‰\$pH‰\$xH‹\$PH‰\$H‹\$XH‰\$H‹\$`H‰\$H‹\$HH‰$H‹\$@H‹[ ÿÓH‹T$ H‹L$(H‹D$0H‰T$hH‰L$pH‰D$xHƒÄ8Ãè    élÿÿÿ
       Ê       –
   0runtime.morestack_noctxt   €p  "".~r2 `type.error "".~r1 P,type.map[string]string "".names  type.[]string ""..this  type."".ObjTool pvop     
  e; TgclocalsÂ·dacebcad73eed5073009fd67170948d0 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   <autogenerated>ş""".ObjTool.Disasm à  ĞeH‹%    H;a†Ë   HƒìPH‹Y H…ÛtH|$XH9;uH‰#1ÛH‰œ$ˆ   H‰œ$   H‰œ$˜   1ÛH‰œ$    H‰œ$¨   H‹\$hH‰\$H‹\$pH‰\$H‹\$xH‰\$H‹œ$€   H‰\$ H‹\$`H‰$H‹\$XH‹[(ÿÓH‹t$(H‹l$0H‹T$8H‹L$@H‹D$HH‰´$ˆ   H‰¬$   H‰”$˜   H‰Œ$    H‰„$¨   HƒÄPÃè    éÿÿÿ

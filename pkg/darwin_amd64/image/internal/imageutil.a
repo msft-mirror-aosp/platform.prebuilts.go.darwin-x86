@@ -1,7 +1,7 @@
 !<arch>
 __.PKGDEF       0           0     0     644     9210      `
 go object darwin amd64 go1.5.1 X:none
-build id "54126aa1634a95417696e63ee28d4a5efe777938"
+build id "6757640139bd2bd9c40d6b087b6fb28825f7d676"
 
 $$
 package imageutil
@@ -74,7 +74,7 @@ package imageutil
 	var @"image/color".YCbCrModel @"image/color".Model
 
 $$
-_go_.o          0           0     0     644     8071      `
+_go_.o          0           0     0     644     8103      `
 go object darwin amd64 go1.5.1 X:none
 
 !
@@ -135,9 +135,9 @@ M‰ÅM‰ÔH‹XhL‹T$XI)ÚH‹hHL¯ÕL‰õL‹@`L)ÅIêL‹@hH‹\$XL‹L$XHÁû?I)ÙIÑùL‰ÅHÁý?I)èL‰ÅHÑýI
 7!U-&$			
 9	DJ
 7!:	-&$			
-7	B—  ¯Á TgclocalsÂ·c54032869eda429ddbb73b99ea2b2744 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   X/tmp/go/src/image/internal/imageutil/impl.goþ"".init     ”eH‹%    H;av4¶    €û t¶    €ûuÃè    Æ    è    Æ    Ãè    ë¶
+7	B—  ¯Á TgclocalsÂ·c54032869eda429ddbb73b99ea2b2744 TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   xprebuilts/go/darwin-x86/src/image/internal/imageutil/impl.goþ"".init     ”eH‹%    H;av4¶    €û t¶    €ûuÃè    Æ    è    Æ    Ãè    ë¶
       $  "".initdoneÂ·   <  "".initdoneÂ·   R
   "runtime.throwinit   b "".initdoneÂ·   n
   image.init   z "".initdoneÂ·   ˆ
   0runtime.morestack_noctxt        P P ŠP 
- (( TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   X/tmp/go/src/image/internal/imageutil/impl.goþTgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb           þTgclocalsÂ·c54032869eda429ddbb73b99ea2b2744      	   !    þTgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb           þTgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb           þ0"".initdoneÂ·  type.uint8   þ"".DrawYCbCrÂ·f              "".DrawYCbCr   þ"".initÂ·f              "".init   þ"runtime.gcbits.01    þ.go.string.hdr."[]uint8"                       &go.string."[]uint8"   þ&go.string."[]uint8"   []uint8  þtype.[]uint8                   ß~.8                                                         0   runtime.algarray   @  "runtime.gcbits.01   P  .go.string.hdr."[]uint8"   p  *go.weak.type.*[]uint8   €  "runtime.zerovalue     type.uint8   þ6go.typelink.[]uint8	[]uint8              type.[]uint8   þ.go.string.hdr."runtime"                       &go.string."runtime"   þ&go.string."runtime"   runtime  þ,go.importpath.runtime.                       &go.string."runtime"   þ*go.string.hdr."image"                       "go.string."image"   þ"go.string."image"   image  þ(go.importpath.image.                       "go.string."image"   þ"runtime.zerovalue      ÿÿgo13ld 
+ (( TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb TgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb   xprebuilts/go/darwin-x86/src/image/internal/imageutil/impl.goþTgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb           þTgclocalsÂ·c54032869eda429ddbb73b99ea2b2744      	   !    þTgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb           þTgclocalsÂ·33cdeccccebe80329f1fdbee7f5874cb           þ0"".initdoneÂ·  type.uint8   þ"".DrawYCbCrÂ·f              "".DrawYCbCr   þ"".initÂ·f              "".init   þ"runtime.gcbits.01    þ.go.string.hdr."[]uint8"                       &go.string."[]uint8"   þ&go.string."[]uint8"   []uint8  þtype.[]uint8                   ß~.8                                                         0   runtime.algarray   @  "runtime.gcbits.01   P  .go.string.hdr."[]uint8"   p  *go.weak.type.*[]uint8   €  "runtime.zerovalue     type.uint8   þ6go.typelink.[]uint8	[]uint8              type.[]uint8   þ.go.string.hdr."runtime"                       &go.string."runtime"   þ&go.string."runtime"   runtime  þ,go.importpath.runtime.                       &go.string."runtime"   þ*go.string.hdr."image"                       "go.string."image"   þ"go.string."image"   image  þ(go.importpath.image.                       "go.string."image"   þ"runtime.zerovalue      ÿÿgo13ld 

@@ -1,6 +1,6 @@
-// Do not edit. Bootstrap copy of /tmp/go/src/cmd/compile/internal/gc/y.go
+// Do not edit. Bootstrap copy of /Volumes/Android/buildbot/src/android/build-tools/out/obj/go/src/cmd/compile/internal/gc/y.go
 
-//line /tmp/go/src/cmd/compile/internal/gc/y.go:1
+//line /Volumes/Android/buildbot/src/android/build-tools/out/obj/go/src/cmd/compile/internal/gc/y.go:1
 //line go.y:21
 package gc
 

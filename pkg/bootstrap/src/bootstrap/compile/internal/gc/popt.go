@@ -1,6 +1,6 @@
-// Do not edit. Bootstrap copy of /tmp/go/src/cmd/compile/internal/gc/popt.go
+// Do not edit. Bootstrap copy of /Volumes/Android/buildbot/src/android/build-tools/out/obj/go/src/cmd/compile/internal/gc/popt.go
 
-//line /tmp/go/src/cmd/compile/internal/gc/popt.go:1
+//line /Volumes/Android/buildbot/src/android/build-tools/out/obj/go/src/cmd/compile/internal/gc/popt.go:1
 // Derived from Inferno utils/6c/gc.h
 // http://code.google.com/p/inferno-os/source/browse/utils/6c/gc.h
 //

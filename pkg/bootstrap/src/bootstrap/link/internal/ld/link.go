@@ -1,6 +1,6 @@
-// Do not edit. Bootstrap copy of /tmp/go/src/cmd/link/internal/ld/link.go
+// Do not edit. Bootstrap copy of /Volumes/Android/buildbot/src/android/build-tools/out/obj/go/src/cmd/link/internal/ld/link.go
 
-//line /tmp/go/src/cmd/link/internal/ld/link.go:1
+//line /Volumes/Android/buildbot/src/android/build-tools/out/obj/go/src/cmd/link/internal/ld/link.go:1
 // Derived from Inferno utils/6l/l.h and related files.
 // http://code.google.com/p/inferno-os/source/browse/utils/6l/l.h
 //

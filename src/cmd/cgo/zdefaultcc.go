@@ -4,3 +4,4 @@ package main
 
 const defaultCC = `clang`
 const defaultCXX = `clang++`
+const defaultPkgConfig = `pkg-config`

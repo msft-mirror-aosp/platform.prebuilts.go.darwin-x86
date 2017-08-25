@@ -3,7 +3,7 @@
 package sys
 
 const DefaultGoroot = `./prebuilts/go/darwin-x86`
-const TheVersion = `go1.9rc2`
+const TheVersion = `go1.9`
 const Goexperiment = ``
 const StackGuardMultiplier = 1
 

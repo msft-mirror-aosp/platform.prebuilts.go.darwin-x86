@@ -1,7 +1,7 @@
 !<arch>
-__.PKGDEF       0           0     0     644     135645    `
-go object darwin amd64 go1.15beta1 X:framepointer
-build id "06w5MTfG9mZY8q_OU8xR/RcIgj-3wWEYH-utZx3pk"
+__.PKGDEF       0           0     0     644     135643    `
+go object darwin amd64 go1.15rc1 X:framepointer
+build id "SCmi7un8SsACCQdt2M3e/FZsONfQr_4652-r7nIbT"
 
 
 $$B
@@ -4673,9 +4673,9 @@ Object.defineProperty(exports, '__esModule', { value: true });
 })));
  d3JSSourceC& DΩ¢æ¢ ¡¢  ‘åŸè ≤
 $$
- _go_.o          0           0     0     644     426       `
-go object darwin amd64 go1.15beta1 X:framepointer
-build id "06w5MTfG9mZY8q_OU8xR/RcIgj-3wWEYH-utZx3pk"
+ _go_.o          0           0     0     644     424       `
+go object darwin amd64 go1.15rc1 X:framepointer
+build id "SCmi7un8SsACCQdt2M3e/FZsONfQr_4652-r7nIbT"
 
 
 !

@@ -1,7 +1,7 @@
 !<arch>
-__.PKGDEF       0           0     0     644     8212      `
-go object darwin amd64 go1.18beta1 X:regabiwrappers,regabireflect,regabiargs,pacerredesign
-build id "HtzHa_EPqT6ccB_jJGuY/jj3k3Pop0C1uNrt5Ul6u"
+__.PKGDEF       0           0     0     644     8210      `
+go object darwin amd64 go1.18rc1 X:regabiwrappers,regabireflect,regabiargs,pacerredesign
+build id "bCfr2GrrnI7whMa-0hg3/BKubPUM0GucP0BWAJfwh"
 
 
 $$B
@@ -295,9 +295,9 @@ function handleMouseUp(evt) {
 }
  svgpanJSSourceC& LÊ>Ë> Ò>  HõžägQm
 $$
-_go_.o          0           0     0     644     611       `
-go object darwin amd64 go1.18beta1 X:regabiwrappers,regabireflect,regabiargs,pacerredesign
-build id "HtzHa_EPqT6ccB_jJGuY/jj3k3Pop0C1uNrt5Ul6u"
+_go_.o          0           0     0     644     609       `
+go object darwin amd64 go1.18rc1 X:regabiwrappers,regabireflect,regabiargs,pacerredesign
+build id "bCfr2GrrnI7whMa-0hg3/BKubPUM0GucP0BWAJfwh"
 
 
 !

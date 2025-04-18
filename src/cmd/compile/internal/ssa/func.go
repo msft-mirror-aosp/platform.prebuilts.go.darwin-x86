@@ -41,11 +41,12 @@ type Func struct {
 	ABISelf        *abi.ABIConfig // ABI for function being compiled
 	ABIDefault     *abi.ABIConfig // ABI for rtcall and other no-parsed-signature/pragma functions.
 
-	scheduled   bool  // Values in Blocks are in final order
-	laidout     bool  // Blocks are ordered
-	NoSplit     bool  // true if function is marked as nosplit.  Used by schedule check pass.
-	dumpFileSeq uint8 // the sequence numbers of dump file. (%s_%02d__%s.dump", funcname, dumpFileSeq, phaseName)
-	IsPgoHot    bool
+	scheduled         bool  // Values in Blocks are in final order
+	laidout           bool  // Blocks are ordered
+	NoSplit           bool  // true if function is marked as nosplit.  Used by schedule check pass.
+	dumpFileSeq       uint8 // the sequence numbers of dump file. (%s_%02d__%s.dump", funcname, dumpFileSeq, phaseName)
+	IsPgoHot          bool
+	HasDeferRangeFunc bool // if true, needs a deferreturn so deferrangefunc can use it for recover() return PC
 
 	// when register allocation is done, maps value ids to locations
 	RegAlloc []Location
@@ -796,7 +797,7 @@ func (f *Func) invalidateCFG() {
 //	base.DebugHashMatch(this function's package.name)
 //
 // for use in bug isolation.  The return value is true unless
-// environment variable GOSSAHASH is set, in which case "it depends".
+// environment variable GOCOMPILEDEBUG=gossahash=X is set, in which case "it depends on X".
 // See [base.DebugHashMatch] for more information.
 func (f *Func) DebugHashMatch() bool {
 	if !base.HasDebugHash() {

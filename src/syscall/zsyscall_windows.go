@@ -150,6 +150,7 @@ var (
 	procSetEnvironmentVariableW            = modkernel32.NewProc("SetEnvironmentVariableW")
 	procSetFileAttributesW                 = modkernel32.NewProc("SetFileAttributesW")
 	procSetFileCompletionNotificationModes = modkernel32.NewProc("SetFileCompletionNotificationModes")
+	procSetFileInformationByHandle         = modkernel32.NewProc("SetFileInformationByHandle")
 	procSetFilePointer                     = modkernel32.NewProc("SetFilePointer")
 	procSetFileTime                        = modkernel32.NewProc("SetFileTime")
 	procSetHandleInformation               = modkernel32.NewProc("SetHandleInformation")
@@ -501,10 +502,10 @@ func CreateFileMapping(fhandle Handle, sa *SecurityAttributes, prot uint32, maxS
 	return
 }
 
-func CreateFile(name *uint16, access uint32, mode uint32, sa *SecurityAttributes, createmode uint32, attrs uint32, templatefile int32) (handle Handle, err error) {
+func createFile(name *uint16, access uint32, mode uint32, sa *SecurityAttributes, createmode uint32, attrs uint32, templatefile int32) (handle Handle, err error) {
 	r0, _, e1 := Syscall9(procCreateFileW.Addr(), 7, uintptr(unsafe.Pointer(name)), uintptr(access), uintptr(mode), uintptr(unsafe.Pointer(sa)), uintptr(createmode), uintptr(attrs), uintptr(templatefile), 0, 0)
 	handle = Handle(r0)
-	if handle == InvalidHandle {
+	if handle == InvalidHandle || e1 == ERROR_ALREADY_EXISTS {
 		err = errnoErr(e1)
 	}
 	return
@@ -1065,6 +1066,14 @@ func SetFileAttributes(name *uint16, attrs uint32) (err error) {
 
 func SetFileCompletionNotificationModes(handle Handle, flags uint8) (err error) {
 	r1, _, e1 := Syscall(procSetFileCompletionNotificationModes.Addr(), 2, uintptr(handle), uintptr(flags), 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func setFileInformationByHandle(handle Handle, fileInformationClass uint32, buf unsafe.Pointer, bufsize uint32) (err error) {
+	r1, _, e1 := Syscall6(procSetFileInformationByHandle.Addr(), 4, uintptr(handle), uintptr(fileInformationClass), uintptr(buf), uintptr(bufsize), 0, 0)
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}

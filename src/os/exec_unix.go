@@ -8,6 +8,7 @@ package os
 
 import (
 	"errors"
+	"runtime"
 	"syscall"
 	"time"
 )
@@ -20,12 +21,15 @@ const (
 
 func (p *Process) wait() (ps *ProcessState, err error) {
 	// Which type of Process do we have?
-	if p.handle != nil {
+	switch p.mode {
+	case modeHandle:
 		// pidfd
 		return p.pidfdWait()
-	} else {
+	case modePID:
 		// Regular PID
 		return p.pidWait()
+	default:
+		panic("unreachable")
 	}
 }
 
@@ -49,7 +53,7 @@ func (p *Process) pidWait() (*ProcessState, error) {
 	if ready {
 		// Mark the process done now, before the call to Wait4,
 		// so that Process.pidSignal will not send a signal.
-		p.doRelease(statusDone)
+		p.pidDeactivate(statusDone)
 		// Acquire a write lock on sigMu to wait for any
 		// active call to the signal method to complete.
 		p.sigMu.Lock()
@@ -66,7 +70,7 @@ func (p *Process) pidWait() (*ProcessState, error) {
 	if err != nil {
 		return nil, NewSyscallError("wait", err)
 	}
-	p.doRelease(statusDone)
+	p.pidDeactivate(statusDone)
 	return &ProcessState{
 		pid:    pid1,
 		status: status,
@@ -81,12 +85,15 @@ func (p *Process) signal(sig Signal) error {
 	}
 
 	// Which type of Process do we have?
-	if p.handle != nil {
+	switch p.mode {
+	case modeHandle:
 		// pidfd
 		return p.pidfdSendSignal(s)
-	} else {
+	case modePID:
 		// Regular PID
 		return p.pidSignal(s)
+	default:
+		panic("unreachable")
 	}
 }
 
@@ -116,6 +123,29 @@ func convertESRCH(err error) error {
 		return ErrProcessDone
 	}
 	return err
+}
+
+func (p *Process) release() error {
+	// We clear the Pid field only for API compatibility. On Unix, Release
+	// has always set Pid to -1. Internally, the implementation relies
+	// solely on statusReleased to determine that the Process is released.
+	p.Pid = pidReleased
+
+	switch p.mode {
+	case modeHandle:
+		// Drop the Process' reference and mark handle unusable for
+		// future calls.
+		//
+		// Ignore the return value: we don't care if this was a no-op
+		// racing with Wait, or a double Release.
+		p.handlePersistentRelease(statusReleased)
+	case modePID:
+		// Just mark the PID unusable.
+		p.pidDeactivate(statusReleased)
+	}
+	// no need for a finalizer anymore
+	runtime.SetFinalizer(p, nil)
+	return nil
 }
 
 func findProcess(pid int) (p *Process, err error) {

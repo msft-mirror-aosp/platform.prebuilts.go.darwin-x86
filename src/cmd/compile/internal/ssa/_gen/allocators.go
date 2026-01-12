@@ -41,7 +41,7 @@ func genAllocators() {
 			capacity: "cap(%s)",
 			mak:      "make([]*Value, %s)",
 			resize:   "%s[:%s]",
-			clear:    "clear(%s)",
+			clear:    "for i := range %[1]s {\n%[1]s[i] = nil\n}",
 			minLog:   5,
 			maxLog:   32,
 		},
@@ -51,7 +51,7 @@ func genAllocators() {
 			capacity: "cap(%s)",
 			mak:      "make([]limit, %s)",
 			resize:   "%s[:%s]",
-			clear:    "clear(%s)",
+			clear:    "for i := range %[1]s {\n%[1]s[i] = limit{}\n}",
 			minLog:   3,
 			maxLog:   30,
 		},
@@ -155,7 +155,7 @@ func genAllocators() {
 		panic(err)
 	}
 
-	if err := os.WriteFile(outFile("allocators.go"), b, 0666); err != nil {
+	if err := os.WriteFile("../allocators.go", b, 0666); err != nil {
 		log.Fatalf("can't write output: %v\n", err)
 	}
 }

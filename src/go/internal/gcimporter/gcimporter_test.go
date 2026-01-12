@@ -472,7 +472,7 @@ func verifyInterfaceMethodRecvs(t *testing.T, named *types.Named, level int) {
 	// check explicitly declared methods
 	for i := 0; i < iface.NumExplicitMethods(); i++ {
 		m := iface.ExplicitMethod(i)
-		recv := m.Signature().Recv()
+		recv := m.Type().(*types.Signature).Recv()
 		if recv == nil {
 			t.Errorf("%s: missing receiver type", m)
 			continue
@@ -632,14 +632,14 @@ func TestIssue13898(t *testing.T) {
 	}
 
 	// lookup go/types.Object.Pkg method
-	sel, ok := types.LookupSelection(typ, false, nil, "Pkg")
-	if !ok {
-		t.Fatalf("go/types.Object.Pkg not found")
+	m, index, indirect := types.LookupFieldOrMethod(typ, false, nil, "Pkg")
+	if m == nil {
+		t.Fatalf("go/types.Object.Pkg not found (index = %v, indirect = %v)", index, indirect)
 	}
 
 	// the method must belong to go/types
-	if sel.Obj().Pkg().Path() != "go/types" {
-		t.Fatalf("found %v; want go/types", sel.Obj().Pkg())
+	if m.Pkg().Path() != "go/types" {
+		t.Fatalf("found %v; want go/types", m.Pkg())
 	}
 }
 
@@ -699,8 +699,8 @@ func TestIssue20046(t *testing.T) {
 	// "./issue20046".V.M must exist
 	pkg := compileAndImportPkg(t, "issue20046")
 	obj := lookupObj(t, pkg.Scope(), "V")
-	if _, ok := types.LookupSelection(obj.Type(), false, nil, "M"); !ok {
-		t.Fatalf("V.M not found")
+	if m, index, indirect := types.LookupFieldOrMethod(obj.Type(), false, nil, "M"); m == nil {
+		t.Fatalf("V.M not found (index = %v, indirect = %v)", index, indirect)
 	}
 }
 func TestIssue25301(t *testing.T) {

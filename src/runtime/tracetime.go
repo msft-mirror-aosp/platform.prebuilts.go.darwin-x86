@@ -8,7 +8,6 @@ package runtime
 
 import (
 	"internal/goarch"
-	"internal/trace/tracev2"
 	_ "unsafe"
 )
 
@@ -51,7 +50,7 @@ type traceTime uint64
 // nosplit because it's called from exitsyscall and various trace writing functions,
 // which are nosplit.
 //
-// traceClockNow is called by runtime/trace and golang.org/x/exp/trace using linkname.
+// traceClockNow is called by golang.org/x/exp/trace using linkname.
 //
 //go:linkname traceClockNow
 //go:nosplit
@@ -64,8 +63,6 @@ func traceClockNow() traceTime {
 
 // traceClockUnitsPerSecond estimates the number of trace clock units per
 // second that elapse.
-//
-//go:linkname traceClockUnitsPerSecond runtime/trace.runtime_traceClockUnitsPerSecond
 func traceClockUnitsPerSecond() uint64 {
 	if osHasLowResClock {
 		// We're using cputicks as our clock, so we need a real estimate.
@@ -76,32 +73,18 @@ func traceClockUnitsPerSecond() uint64 {
 	return uint64(1.0 / float64(traceTimeDiv) * 1e9)
 }
 
-func traceSyncBatch(gen uintptr, frequency uint64) {
+// traceFrequency writes a batch with a single EvFrequency event.
+//
+// freq is the number of trace clock units per second.
+func traceFrequency(gen uintptr) {
 	w := unsafeTraceWriter(gen, nil)
 
 	// Ensure we have a place to write to.
-	w, _ = w.ensure(3 /* EvSync + EvFrequency + EvClockSnapshot */ + 5*traceBytesPerNumber /* frequency, timestamp, mono, sec, nsec */)
+	w, _ = w.ensure(1 + traceBytesPerNumber /* traceEvFrequency + frequency */)
 
-	// Write out the sync batch event.
-	w.byte(byte(tracev2.EvSync))
-
-	// Write out the frequency event.
-	w.byte(byte(tracev2.EvFrequency))
-	w.varint(frequency)
-
-	// Write out the clock snapshot event.
-	sec, nsec, mono := time_now()
-	ts := traceClockNow()
-	if ts <= w.traceBuf.lastTime {
-		ts = w.traceBuf.lastTime + 1
-	}
-	tsDiff := uint64(ts - w.traceBuf.lastTime)
-	w.traceBuf.lastTime = ts
-	w.byte(byte(tracev2.EvClockSnapshot))
-	w.varint(tsDiff)
-	w.varint(uint64(mono))
-	w.varint(uint64(sec))
-	w.varint(uint64(nsec))
+	// Write out the string.
+	w.byte(byte(traceEvFrequency))
+	w.varint(traceClockUnitsPerSecond())
 
 	// Immediately flush the buffer.
 	systemstack(func() {

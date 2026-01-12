@@ -114,8 +114,6 @@ func prepareFunc(fn *ir.Func) {
 	ir.CurFunc = fn
 	walk.Walk(fn)
 	ir.CurFunc = nil // enforce no further uses of CurFunc
-
-	base.Ctxt.DwTextCount++
 }
 
 // compileFunctions compiles all functions in compilequeue.

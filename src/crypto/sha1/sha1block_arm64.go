@@ -6,16 +6,7 @@
 
 package sha1
 
-import (
-	"crypto/internal/impl"
-	"internal/cpu"
-)
-
-var useSHA1 = cpu.ARM64.HasSHA1
-
-func init() {
-	impl.Register("sha1", "Armv8.0", &useSHA1)
-}
+import "internal/cpu"
 
 var k = []uint32{
 	0x5A827999,
@@ -28,10 +19,10 @@ var k = []uint32{
 func sha1block(h []uint32, p []byte, k []uint32)
 
 func block(dig *digest, p []byte) {
-	if useSHA1 {
+	if !cpu.ARM64.HasSHA1 {
+		blockGeneric(dig, p)
+	} else {
 		h := dig.h[:]
 		sha1block(h, p, k)
-	} else {
-		blockGeneric(dig, p)
 	}
 }

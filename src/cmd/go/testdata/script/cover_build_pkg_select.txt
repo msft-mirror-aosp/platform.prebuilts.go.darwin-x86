@@ -3,6 +3,9 @@
 
 [short] skip
 
+# Skip if new coverage is not enabled.
+[!GOEXPERIMENT:coverageredesign] skip
+
 #-------------------------------------------
 
 # Build for coverage.

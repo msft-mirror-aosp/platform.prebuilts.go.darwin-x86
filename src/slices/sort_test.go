@@ -264,19 +264,19 @@ func TestMinMaxPanics(t *testing.T) {
 	intCmp := func(a, b int) int { return a - b }
 	emptySlice := []int{}
 
-	if !panics(func() { _ = Min(emptySlice) }) {
+	if !panics(func() { Min(emptySlice) }) {
 		t.Errorf("Min([]): got no panic, want panic")
 	}
 
-	if !panics(func() { _ = Max(emptySlice) }) {
+	if !panics(func() { Max(emptySlice) }) {
 		t.Errorf("Max([]): got no panic, want panic")
 	}
 
-	if !panics(func() { _ = MinFunc(emptySlice, intCmp) }) {
+	if !panics(func() { MinFunc(emptySlice, intCmp) }) {
 		t.Errorf("MinFunc([]): got no panic, want panic")
 	}
 
-	if !panics(func() { _ = MaxFunc(emptySlice, intCmp) }) {
+	if !panics(func() { MaxFunc(emptySlice, intCmp) }) {
 		t.Errorf("MaxFunc([]): got no panic, want panic")
 	}
 }

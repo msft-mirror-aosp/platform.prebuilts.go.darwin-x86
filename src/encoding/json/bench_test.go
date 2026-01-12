@@ -8,15 +8,13 @@
 // We benchmark converting between the JSON form
 // and in-memory data structures.
 
-//go:build !goexperiment.jsonv2
-
 package json
 
 import (
 	"bytes"
+	"compress/gzip"
 	"fmt"
 	"internal/testenv"
-	"internal/zstd"
 	"io"
 	"os"
 	"reflect"
@@ -46,12 +44,15 @@ var codeJSON []byte
 var codeStruct codeResponse
 
 func codeInit() {
-	f, err := os.Open("internal/jsontest/testdata/golang_source.json.zst")
+	f, err := os.Open("testdata/code.json.gz")
 	if err != nil {
 		panic(err)
 	}
 	defer f.Close()
-	gz := zstd.NewReader(f)
+	gz, err := gzip.NewReader(f)
+	if err != nil {
+		panic(err)
+	}
 	data, err := io.ReadAll(gz)
 	if err != nil {
 		panic(err)

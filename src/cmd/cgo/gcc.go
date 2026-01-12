@@ -2863,7 +2863,7 @@ func (c *typeConv) loadType(dtype dwarf.Type, pos token.Pos, parent string) *Typ
 			if ss, ok := dwarfToName[s]; ok {
 				s = ss
 			}
-			s = strings.ReplaceAll(s, " ", "")
+			s = strings.Replace(s, " ", "", -1)
 			name := c.Ident("_Ctype_" + s)
 			tt := *t
 			typedef[name.Name] = &tt

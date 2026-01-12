@@ -12,18 +12,23 @@ import (
 	"math"
 	"strings"
 
-	"internal/trace/tracev2"
+	"internal/trace/event"
+	"internal/trace/event/go122"
 	"internal/trace/version"
 )
 
+// maxArgs is the maximum number of arguments for "plain" events,
+// i.e. anything that could reasonably be represented as a baseEvent.
+const maxArgs = 5
+
 // timedEventArgs is an array that is able to hold the arguments for any
 // timed event.
-type timedEventArgs [tracev2.MaxTimedEventArgs - 1]uint64
+type timedEventArgs [maxArgs - 1]uint64
 
 // baseEvent is the basic unprocessed event. This serves as a common
 // fundamental data structure across.
 type baseEvent struct {
-	typ  tracev2.EventType
+	typ  event.Type
 	time Time
 	args timedEventArgs
 }
@@ -33,7 +38,7 @@ type baseEvent struct {
 func (e *baseEvent) extra(v version.Version) []uint64 {
 	switch v {
 	case version.Go122:
-		return e.args[len(tracev2.Specs()[e.typ].Args)-1:]
+		return e.args[len(go122.Specs()[e.typ].Args)-1:]
 	}
 	panic(fmt.Sprintf("unsupported version: go 1.%d", v))
 }
@@ -41,7 +46,7 @@ func (e *baseEvent) extra(v version.Version) []uint64 {
 // evTable contains the per-generation data necessary to
 // interpret an individual event.
 type evTable struct {
-	sync
+	freq    frequency
 	strings dataTable[stringID, string]
 	stacks  dataTable[stackID, stack]
 	pcs     map[uint64]frame
@@ -53,8 +58,9 @@ type evTable struct {
 	extraStringIDs map[string]extraStringID
 	nextExtra      extraStringID
 
-	// expBatches contains extra unparsed data relevant to a specific experiment.
-	expBatches map[tracev2.Experiment][]ExperimentalBatch
+	// expData contains extra unparsed data that is accessible
+	// only to ExperimentEvent via an EventExperimental event.
+	expData map[event.Experiment]*ExperimentalData
 }
 
 // addExtraString adds an extra string to the evTable and returns
@@ -234,7 +240,7 @@ func (s cpuSample) asEvent(table *evTable) Event {
 		table: table,
 		ctx:   s.schedCtx,
 		base: baseEvent{
-			typ:  tracev2.EvCPUSample,
+			typ:  go122.EvCPUSample,
 			time: s.time,
 		},
 	}

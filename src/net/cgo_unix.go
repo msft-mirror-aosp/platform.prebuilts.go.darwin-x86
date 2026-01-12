@@ -47,7 +47,11 @@ func (eai addrinfoErrno) isAddrinfoErrno() {}
 func doBlockingWithCtx[T any](ctx context.Context, lookupName string, blocking func() (T, error)) (T, error) {
 	if err := acquireThread(ctx); err != nil {
 		var zero T
-		return zero, newDNSError(mapErr(err), lookupName, "")
+		return zero, &DNSError{
+			Name:      lookupName,
+			Err:       mapErr(err).Error(),
+			IsTimeout: err == context.DeadlineExceeded,
+		}
 	}
 
 	if ctx.Done() == nil {
@@ -73,7 +77,11 @@ func doBlockingWithCtx[T any](ctx context.Context, lookupName string, blocking f
 		return r.res, r.err
 	case <-ctx.Done():
 		var zero T
-		return zero, newDNSError(mapErr(ctx.Err()), lookupName, "")
+		return zero, &DNSError{
+			Name:      lookupName,
+			Err:       mapErr(ctx.Err()).Error(),
+			IsTimeout: ctx.Err() == context.DeadlineExceeded,
+		}
 	}
 }
 

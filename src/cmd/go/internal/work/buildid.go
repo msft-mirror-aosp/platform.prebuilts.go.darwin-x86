@@ -144,42 +144,55 @@ func contentID(buildID string) string {
 // build setups agree on details like $GOROOT and file name paths, but at least the
 // tool IDs do not make it impossible.)
 func (b *Builder) toolID(name string) string {
-	return b.toolIDCache.Do(name, func() string {
-		path := base.Tool(name)
-		desc := "go tool " + name
+	b.id.Lock()
+	id := b.toolIDCache[name]
+	b.id.Unlock()
 
-		// Special case: undocumented -vettool overrides usual vet,
-		// for testing vet or supplying an alternative analysis tool.
-		if name == "vet" && VetTool != "" {
-			path = VetTool
-			desc = VetTool
-		}
+	if id != "" {
+		return id
+	}
 
-		cmdline := str.StringList(cfg.BuildToolexec, path, "-V=full")
-		cmd := exec.Command(cmdline[0], cmdline[1:]...)
-		var stdout, stderr strings.Builder
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-		if err := cmd.Run(); err != nil {
-			if stderr.Len() > 0 {
-				os.Stderr.WriteString(stderr.String())
-			}
-			base.Fatalf("go: error obtaining buildID for %s: %v", desc, err)
-		}
+	path := base.Tool(name)
+	desc := "go tool " + name
 
-		line := stdout.String()
-		f := strings.Fields(line)
-		if len(f) < 3 || f[0] != name && path != VetTool || f[1] != "version" || strings.Contains(f[2], "devel") && !strings.HasPrefix(f[len(f)-1], "buildID=") {
-			base.Fatalf("go: parsing buildID from %s -V=full: unexpected output:\n\t%s", desc, line)
+	// Special case: undocumented -vettool overrides usual vet,
+	// for testing vet or supplying an alternative analysis tool.
+	if name == "vet" && VetTool != "" {
+		path = VetTool
+		desc = VetTool
+	}
+
+	cmdline := str.StringList(cfg.BuildToolexec, path, "-V=full")
+	cmd := exec.Command(cmdline[0], cmdline[1:]...)
+	var stdout, stderr strings.Builder
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		if stderr.Len() > 0 {
+			os.Stderr.WriteString(stderr.String())
 		}
-		if strings.Contains(f[2], "devel") {
-			// On the development branch, use the content ID part of the build ID.
-			return contentID(f[len(f)-1])
-		}
+		base.Fatalf("go: error obtaining buildID for %s: %v", desc, err)
+	}
+
+	line := stdout.String()
+	f := strings.Fields(line)
+	if len(f) < 3 || f[0] != name && path != VetTool || f[1] != "version" || f[2] == "devel" && !strings.HasPrefix(f[len(f)-1], "buildID=") {
+		base.Fatalf("go: parsing buildID from %s -V=full: unexpected output:\n\t%s", desc, line)
+	}
+	if f[2] == "devel" {
+		// On the development branch, use the content ID part of the build ID.
+		id = contentID(f[len(f)-1])
+	} else {
 		// For a release, the output is like: "compile version go1.9.1 X:framepointer".
 		// Use the whole line.
-		return strings.TrimSpace(line)
-	})
+		id = strings.TrimSpace(line)
+	}
+
+	b.id.Lock()
+	b.toolIDCache[name] = id
+	b.id.Unlock()
+
+	return id
 }
 
 // gccToolID returns the unique ID to use for a tool that is invoked
@@ -203,11 +216,10 @@ func (b *Builder) toolID(name string) string {
 // to detect changes in the underlying compiler. The returned exe can be empty,
 // which means to rely only on the id.
 func (b *Builder) gccToolID(name, language string) (id, exe string, err error) {
-	//TODO: Use par.Cache instead of a mutex and a map. See Builder.toolID.
 	key := name + "." + language
 	b.id.Lock()
-	id = b.gccToolIDCache[key]
-	exe = b.gccToolIDCache[key+".exe"]
+	id = b.toolIDCache[key]
+	exe = b.toolIDCache[key+".exe"]
 	b.id.Unlock()
 
 	if id != "" {
@@ -297,8 +309,8 @@ func (b *Builder) gccToolID(name, language string) (id, exe string, err error) {
 	}
 
 	b.id.Lock()
-	b.gccToolIDCache[key] = id
-	b.gccToolIDCache[key+".exe"] = exe
+	b.toolIDCache[key] = id
+	b.toolIDCache[key+".exe"] = exe
 	b.id.Unlock()
 
 	return id, exe, nil
@@ -642,7 +654,7 @@ func (b *Builder) updateBuildID(a *Action, target string) error {
 	sh := b.Shell(a)
 
 	if cfg.BuildX || cfg.BuildN {
-		sh.ShowCmd("", "%s # internal", joinUnambiguously(str.StringList("go", "tool", "buildid", "-w", target)))
+		sh.ShowCmd("", "%s # internal", joinUnambiguously(str.StringList(base.Tool("buildid"), "-w", target)))
 		if cfg.BuildN {
 			return nil
 		}
@@ -745,9 +757,8 @@ func (b *Builder) updateBuildID(a *Action, target string) error {
 			}
 			outputID, _, err := c.PutExecutable(a.actionID, name+cfg.ExeSuffix, r)
 			r.Close()
-			a.cachedExecutable = c.OutputFile(outputID)
 			if err == nil && cfg.BuildX {
-				sh.ShowCmd("", "%s # internal", joinUnambiguously(str.StringList("cp", target, a.cachedExecutable)))
+				sh.ShowCmd("", "%s # internal", joinUnambiguously(str.StringList("cp", target, c.OutputFile(outputID))))
 			}
 		}
 	}

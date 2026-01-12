@@ -97,11 +97,6 @@ func main() {
 		rp.Read(data[:])
 		pipeReadDone <- true
 	}()
-	go func() { // func12
-		for {
-			syncPreemptPoint()
-		}
-	}()
 
 	time.Sleep(100 * time.Millisecond)
 	runtime.GC()
@@ -132,12 +127,3 @@ func main() {
 
 	runtime.GOMAXPROCS(oldGoMaxProcs)
 }
-
-//go:noinline
-func syncPreemptPoint() {
-	if never {
-		syncPreemptPoint()
-	}
-}
-
-var never bool

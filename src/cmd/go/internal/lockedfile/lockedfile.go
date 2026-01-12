@@ -24,8 +24,6 @@ import (
 type File struct {
 	osFile
 	closed bool
-	// cleanup panics when the file is no longer referenced and it has not been closed.
-	cleanup runtime.Cleanup
 }
 
 // osFile embeds a *os.File while keeping the pointer itself unexported.
@@ -50,11 +48,11 @@ func OpenFile(name string, flag int, perm fs.FileMode) (*File, error) {
 	// Although the operating system will drop locks for open files when the go
 	// command exits, we want to hold locks for as little time as possible, and we
 	// especially don't want to leave a file locked after we're done with it. Our
-	// Close method is what releases the locks, so use a cleanup to report
+	// Close method is what releases the locks, so use a finalizer to report
 	// missing Close calls on a best-effort basis.
-	f.cleanup = runtime.AddCleanup(f, func(fileName string) {
-		panic(fmt.Sprintf("lockedfile.File %s became unreachable without a call to Close", fileName))
-	}, f.Name())
+	runtime.SetFinalizer(f, func(f *File) {
+		panic(fmt.Sprintf("lockedfile.File %s became unreachable without a call to Close", f.Name()))
+	})
 
 	return f, nil
 }
@@ -93,7 +91,7 @@ func (f *File) Close() error {
 	f.closed = true
 
 	err := closeFile(f.osFile.File)
-	f.cleanup.Stop()
+	runtime.SetFinalizer(f, nil)
 	return err
 }
 

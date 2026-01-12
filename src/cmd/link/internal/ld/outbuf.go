@@ -92,7 +92,9 @@ func NewOutBuf(arch *sys.Arch) *OutBuf {
 	}
 }
 
-func (out *OutBuf) View(start uint64) *OutBuf {
+var viewError = errors.New("output not mmapped")
+
+func (out *OutBuf) View(start uint64) (*OutBuf, error) {
 	return &OutBuf{
 		arch:   out.arch,
 		name:   out.name,
@@ -100,7 +102,7 @@ func (out *OutBuf) View(start uint64) *OutBuf {
 		heap:   out.heap,
 		off:    int64(start),
 		isView: true,
-	}
+	}, nil
 }
 
 var viewCloseError = errors.New("cannot Close OutBuf from View")

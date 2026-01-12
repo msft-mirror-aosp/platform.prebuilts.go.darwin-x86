@@ -174,7 +174,8 @@ func (gcToolchain) gc(b *Builder, a *Action, archive string, importcfg, embedcfg
 		// code that uses those values to expect absolute paths.
 		args = append(args, fsys.Actual(f))
 	}
-	output, err = sh.runOut(base.Cwd(), cfgChangedEnv, args...)
+
+	output, err = sh.runOut(base.Cwd(), nil, args...)
 	return ofile, output, err
 }
 
@@ -396,7 +397,7 @@ func (gcToolchain) asm(b *Builder, a *Action, sfiles []string) ([]string, error)
 		ofile := a.Objdir + sfile[:len(sfile)-len(".s")] + ".o"
 		ofiles = append(ofiles, ofile)
 		args1 := append(args, "-o", ofile, fsys.Actual(mkAbs(p.Dir, sfile)))
-		if err := b.Shell(a).run(p.Dir, p.ImportPath, cfgChangedEnv, args1...); err != nil {
+		if err := b.Shell(a).run(p.Dir, p.ImportPath, nil, args1...); err != nil {
 			return nil, err
 		}
 	}
@@ -423,7 +424,7 @@ func (gcToolchain) symabis(b *Builder, a *Action, sfiles []string) (string, erro
 			return err
 		}
 
-		return sh.run(p.Dir, p.ImportPath, cfgChangedEnv, args...)
+		return sh.run(p.Dir, p.ImportPath, nil, args...)
 	}
 
 	var symabis string // Only set if we actually create the file
@@ -482,7 +483,7 @@ func (gcToolchain) pack(b *Builder, a *Action, afile string, ofiles []string) er
 	p := a.Package
 	sh := b.Shell(a)
 	if cfg.BuildN || cfg.BuildX {
-		cmdline := str.StringList("go", "tool", "pack", "r", absAfile, absOfiles)
+		cmdline := str.StringList(base.Tool("pack"), "r", absAfile, absOfiles)
 		sh.ShowCmd(p.Dir, "%s # internal", joinUnambiguously(cmdline))
 	}
 	if cfg.BuildN {
@@ -672,7 +673,7 @@ func (gcToolchain) ld(b *Builder, root *Action, targetPath, importcfg, mainpkg s
 		dir, targetPath = filepath.Split(targetPath)
 	}
 
-	env := cfgChangedEnv
+	env := []string{}
 	// When -trimpath is used, GOROOT is cleared
 	if cfg.BuildTrimpath {
 		env = append(env, "GOROOT=")
@@ -727,7 +728,7 @@ func (gcToolchain) ldShared(b *Builder, root *Action, toplevelactions []*Action,
 	// the output file path is recorded in the .gnu.version_d section.
 	dir, targetPath := filepath.Split(targetPath)
 
-	return b.Shell(root).run(dir, targetPath, cfgChangedEnv, cfg.BuildToolexec, base.Tool("link"), "-o", targetPath, "-importcfg", importcfg, ldflags)
+	return b.Shell(root).run(dir, targetPath, nil, cfg.BuildToolexec, base.Tool("link"), "-o", targetPath, "-importcfg", importcfg, ldflags)
 }
 
 func (gcToolchain) cc(b *Builder, a *Action, ofile, cfile string) error {

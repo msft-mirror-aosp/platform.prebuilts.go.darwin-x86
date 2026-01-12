@@ -264,7 +264,10 @@ func (b *Block) resetWithControl2(kind BlockKind, v, w *Value) {
 // The values in b.Values after i must already have had their args reset,
 // to maintain correct value uses counts.
 func (b *Block) truncateValues(i int) {
-	clear(b.Values[i:])
+	tail := b.Values[i:]
+	for j := range tail {
+		tail[j] = nil
+	}
 	b.Values = b.Values[:i]
 }
 

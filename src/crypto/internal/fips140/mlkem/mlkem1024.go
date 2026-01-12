@@ -118,7 +118,10 @@ func generateKey1024(dk *DecapsulationKey1024) (*DecapsulationKey1024, error) {
 	var z [32]byte
 	drbg.Read(z[:])
 	kemKeyGen1024(dk, &d, &z)
-	fips140.PCT("ML-KEM PCT", func() error { return kemPCT1024(dk) })
+	if err := fips140.PCT("ML-KEM PCT", func() error { return kemPCT1024(dk) }); err != nil {
+		// This clearly can't happen, but FIPS 140-3 requires us to check.
+		panic(err)
+	}
 	fips140.RecordApproved()
 	return dk, nil
 }
@@ -146,6 +149,10 @@ func newKeyFromSeed1024(dk *DecapsulationKey1024, seed []byte) (*DecapsulationKe
 	d := (*[32]byte)(seed[:32])
 	z := (*[32]byte)(seed[32:])
 	kemKeyGen1024(dk, d, z)
+	if err := fips140.PCT("ML-KEM PCT", func() error { return kemPCT1024(dk) }); err != nil {
+		// This clearly can't happen, but FIPS 140-3 requires us to check.
+		panic(err)
+	}
 	fips140.RecordApproved()
 	return dk, nil
 }

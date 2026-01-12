@@ -169,16 +169,13 @@ func (a *activeSweep) end(sl sweepLocker) {
 			throw("mismatched begin/end of activeSweep")
 		}
 		if a.state.CompareAndSwap(state, state-1) {
-			if state-1 != sweepDrainedMask {
+			if state != sweepDrainedMask {
 				return
 			}
-			// We're the last sweeper, and there's nothing left to sweep.
 			if debug.gcpacertrace > 0 {
 				live := gcController.heapLive.Load()
 				print("pacer: sweep done at heap size ", live>>20, "MB; allocated ", (live-mheap_.sweepHeapLiveBasis)>>20, "MB during sweep; swept ", mheap_.pagesSwept.Load(), " pages at ", mheap_.sweepPagesPerByte, " pages/byte\n")
 			}
-			// Now that sweeping is completely done, flush remaining cleanups.
-			gcCleanups.flush()
 			return
 		}
 	}
@@ -313,10 +310,6 @@ func bgsweep(c chan int) {
 			// gosweepone returning ^0 above
 			// and the lock being acquired.
 			unlock(&sweep.lock)
-			// This goroutine must preempt when we have no work to do
-			// but isSweepDone returns false because of another existing sweeper.
-			// See issue #73499.
-			goschedIfBusy()
 			continue
 		}
 		sweep.parked = true
@@ -524,7 +517,7 @@ func (sl *sweepLocked) sweep(preserve bool) bool {
 
 	trace := traceAcquire()
 	if trace.ok() {
-		trace.GCSweepSpan(s.npages * pageSize)
+		trace.GCSweepSpan(s.npages * _PageSize)
 		traceRelease(trace)
 	}
 
@@ -641,18 +634,10 @@ func (sl *sweepLocked) sweep(preserve bool) bool {
 				if asanenabled && !s.isUserArenaChunk {
 					asanpoison(unsafe.Pointer(x), size)
 				}
-				if valgrindenabled && !s.isUserArenaChunk {
-					valgrindFree(unsafe.Pointer(x))
-				}
 			}
 			mbits.advance()
 			abits.advance()
 		}
-	}
-
-	// Copy over and clear the inline mark bits if necessary.
-	if gcUsesSpanInlineMarkBits(s.elemsize) {
-		s.moveInlineMarks(s.gcmarkBits)
 	}
 
 	// Check for zombie objects.
@@ -996,9 +981,9 @@ func gcPaceSweeper(trigger uint64) {
 		// concurrent sweep are less likely to leave pages
 		// unswept when GC starts.
 		heapDistance -= 1024 * 1024
-		if heapDistance < pageSize {
+		if heapDistance < _PageSize {
 			// Avoid setting the sweep ratio extremely high
-			heapDistance = pageSize
+			heapDistance = _PageSize
 		}
 		pagesSwept := mheap_.pagesSwept.Load()
 		pagesInUse := mheap_.pagesInUse.Load()

@@ -122,7 +122,7 @@ func (c CCMask) String() string {
 	}
 
 	// invalid
-	return fmt.Sprintf("Invalid (%#x)", uint8(c))
+	return fmt.Sprintf("Invalid (%#x)", c)
 }
 
 func (CCMask) CanBeAnSSAAux() {}

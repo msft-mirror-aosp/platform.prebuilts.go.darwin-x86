@@ -590,7 +590,7 @@ func LoadModGraph(ctx context.Context, goVersion string) (*ModuleGraph, error) {
 		return nil, err
 	}
 	requirements = rs
-	return mg, nil
+	return mg, err
 }
 
 // expandGraph loads the complete module graph from rs.
@@ -655,7 +655,7 @@ func EditBuildList(ctx context.Context, add, mustSelect []module.Version) (chang
 		return false, err
 	}
 	requirements = rs
-	return changed, nil
+	return changed, err
 }
 
 // OverrideRoots edits the global requirement roots by replacing the specific module versions.

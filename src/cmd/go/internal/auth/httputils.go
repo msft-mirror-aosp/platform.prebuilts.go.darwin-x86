@@ -3,7 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // Code copied from x/net/http/httpguts/httplex.go
-
 package auth
 
 var isTokenTable = [256]bool{

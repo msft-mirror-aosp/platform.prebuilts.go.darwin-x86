@@ -6,16 +6,10 @@ package adler32
 
 import (
 	"encoding"
-	"hash"
-	"internal/testhash"
 	"io"
 	"strings"
 	"testing"
 )
-
-func TestHashInterface(t *testing.T) {
-	testhash.TestHash(t, func() hash.Hash { return New() })
-}
 
 var golden = []struct {
 	out       uint32

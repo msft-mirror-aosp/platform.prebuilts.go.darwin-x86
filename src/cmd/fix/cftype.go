@@ -67,14 +67,14 @@ func typefix(f *ast.File, badType func(string) bool) bool {
 				return
 			}
 			v := reflect.ValueOf(n)
-			if v.Kind() != reflect.Pointer {
+			if v.Type().Kind() != reflect.Pointer {
 				return
 			}
 			if v.IsNil() {
 				return
 			}
 			v = v.Elem()
-			if v.Kind() != reflect.Struct {
+			if v.Type().Kind() != reflect.Struct {
 				return
 			}
 			for i := 0; i < v.NumField(); i++ {

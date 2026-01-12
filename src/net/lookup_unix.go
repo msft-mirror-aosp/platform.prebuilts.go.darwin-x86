@@ -12,9 +12,11 @@ import (
 	"sync"
 )
 
-// readProtocolsOnce loads contents of /etc/protocols into protocols map
+var onceReadProtocols sync.Once
+
+// readProtocols loads contents of /etc/protocols into protocols map
 // for quick access.
-var readProtocolsOnce = sync.OnceFunc(func() {
+func readProtocols() {
 	file, err := open("/etc/protocols")
 	if err != nil {
 		return
@@ -41,12 +43,12 @@ var readProtocolsOnce = sync.OnceFunc(func() {
 			}
 		}
 	}
-})
+}
 
 // lookupProtocol looks up IP protocol name in /etc/protocols and
 // returns correspondent protocol number.
 func lookupProtocol(_ context.Context, name string) (int, error) {
-	readProtocolsOnce()
+	onceReadProtocols.Do(readProtocols)
 	return lookupProtocolMap(name)
 }
 

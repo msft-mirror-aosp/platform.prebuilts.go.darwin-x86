@@ -6,8 +6,7 @@
 
 package main
 
-//go:noinline
-func run() { // ERROR "cannot inline run: marked go:noinline"
+func run() { // ERROR "cannot inline run: recursive"
 	f := func() { // ERROR "can inline run.func1 with cost .* as:.*" "func literal does not escape"
 		g() // ERROR "inlining call to g"
 	}

@@ -57,13 +57,13 @@ func readUnifiedPackage(fset *token.FileSet, ctxt *types.Context, imports map[st
 		ctxt:    ctxt,
 		imports: imports,
 
-		posBases: make([]string, input.NumElems(pkgbits.SectionPosBase)),
-		pkgs:     make([]*types.Package, input.NumElems(pkgbits.SectionPkg)),
-		typs:     make([]types.Type, input.NumElems(pkgbits.SectionType)),
+		posBases: make([]string, input.NumElems(pkgbits.RelocPosBase)),
+		pkgs:     make([]*types.Package, input.NumElems(pkgbits.RelocPkg)),
+		typs:     make([]types.Type, input.NumElems(pkgbits.RelocType)),
 	}
 	defer pr.fake.setLines()
 
-	r := pr.newReader(pkgbits.SectionMeta, pkgbits.PublicRootIdx, pkgbits.SyncPublic)
+	r := pr.newReader(pkgbits.RelocMeta, pkgbits.PublicRootIdx, pkgbits.SyncPublic)
 	pkg := r.pkg()
 	if r.Version().Has(pkgbits.HasInit) {
 		r.Bool()
@@ -76,7 +76,7 @@ func readUnifiedPackage(fset *token.FileSet, ctxt *types.Context, imports map[st
 		if r.Version().Has(pkgbits.DerivedFuncInstance) {
 			assert(!r.Bool())
 		}
-		r.p.objIdx(r.Reloc(pkgbits.SectionObj))
+		r.p.objIdx(r.Reloc(pkgbits.RelocObj))
 		assert(r.Len() == 0)
 	}
 
@@ -132,14 +132,14 @@ type readerDict struct {
 	derivedTypes []types.Type // lazily instantiated from derived
 }
 
-func (pr *pkgReader) newReader(k pkgbits.SectionKind, idx pkgbits.Index, marker pkgbits.SyncMarker) *reader {
+func (pr *pkgReader) newReader(k pkgbits.RelocKind, idx pkgbits.Index, marker pkgbits.SyncMarker) *reader {
 	return &reader{
 		Decoder: pr.NewDecoder(k, idx, marker),
 		p:       pr,
 	}
 }
 
-func (pr *pkgReader) tempReader(k pkgbits.SectionKind, idx pkgbits.Index, marker pkgbits.SyncMarker) *reader {
+func (pr *pkgReader) tempReader(k pkgbits.RelocKind, idx pkgbits.Index, marker pkgbits.SyncMarker) *reader {
 	return &reader{
 		Decoder: pr.TempDecoder(k, idx, marker),
 		p:       pr,
@@ -166,7 +166,7 @@ func (r *reader) pos() token.Pos {
 }
 
 func (r *reader) posBase() string {
-	return r.p.posBaseIdx(r.Reloc(pkgbits.SectionPosBase))
+	return r.p.posBaseIdx(r.Reloc(pkgbits.RelocPosBase))
 }
 
 func (pr *pkgReader) posBaseIdx(idx pkgbits.Index) string {
@@ -176,7 +176,7 @@ func (pr *pkgReader) posBaseIdx(idx pkgbits.Index) string {
 
 	var filename string
 	{
-		r := pr.tempReader(pkgbits.SectionPosBase, idx, pkgbits.SyncPosBase)
+		r := pr.tempReader(pkgbits.RelocPosBase, idx, pkgbits.SyncPosBase)
 
 		// Within types2, position bases have a lot more details (e.g.,
 		// keeping track of where //line directives appeared exactly).
@@ -206,7 +206,7 @@ func (pr *pkgReader) posBaseIdx(idx pkgbits.Index) string {
 
 func (r *reader) pkg() *types.Package {
 	r.Sync(pkgbits.SyncPkg)
-	return r.p.pkgIdx(r.Reloc(pkgbits.SectionPkg))
+	return r.p.pkgIdx(r.Reloc(pkgbits.RelocPkg))
 }
 
 func (pr *pkgReader) pkgIdx(idx pkgbits.Index) *types.Package {
@@ -216,7 +216,7 @@ func (pr *pkgReader) pkgIdx(idx pkgbits.Index) *types.Package {
 		return pkg
 	}
 
-	pkg := pr.newReader(pkgbits.SectionPkg, idx, pkgbits.SyncPkgDef).doPkg()
+	pkg := pr.newReader(pkgbits.RelocPkg, idx, pkgbits.SyncPkgDef).doPkg()
 	pr.pkgs[idx] = pkg
 	return pkg
 }
@@ -255,7 +255,7 @@ func (r *reader) typInfo() typeInfo {
 	if r.Bool() {
 		return typeInfo{idx: pkgbits.Index(r.Len()), derived: true}
 	}
-	return typeInfo{idx: r.Reloc(pkgbits.SectionType), derived: false}
+	return typeInfo{idx: r.Reloc(pkgbits.RelocType), derived: false}
 }
 
 func (pr *pkgReader) typIdx(info typeInfo, dict *readerDict) types.Type {
@@ -274,7 +274,7 @@ func (pr *pkgReader) typIdx(info typeInfo, dict *readerDict) types.Type {
 
 	var typ types.Type
 	{
-		r := pr.tempReader(pkgbits.SectionType, idx, pkgbits.SyncTypeIdx)
+		r := pr.tempReader(pkgbits.RelocType, idx, pkgbits.SyncTypeIdx)
 		r.dict = dict
 
 		typ = r.doTyp()
@@ -399,34 +399,32 @@ func (r *reader) interfaceType() *types.Interface {
 func (r *reader) signature(recv *types.Var, rtparams, tparams []*types.TypeParam) *types.Signature {
 	r.Sync(pkgbits.SyncSignature)
 
-	params := r.params(types.ParamVar)
-	results := r.params(types.ResultVar)
+	params := r.params()
+	results := r.params()
 	variadic := r.Bool()
 
 	return types.NewSignatureType(recv, rtparams, tparams, params, results, variadic)
 }
 
-func (r *reader) params(kind types.VarKind) *types.Tuple {
+func (r *reader) params() *types.Tuple {
 	r.Sync(pkgbits.SyncParams)
 
 	params := make([]*types.Var, r.Len())
 	for i := range params {
-		params[i] = r.param(kind)
+		params[i] = r.param()
 	}
 
 	return types.NewTuple(params...)
 }
 
-func (r *reader) param(kind types.VarKind) *types.Var {
+func (r *reader) param() *types.Var {
 	r.Sync(pkgbits.SyncParam)
 
 	pos := r.pos()
 	pkg, name := r.localIdent()
 	typ := r.typ()
 
-	param := types.NewParam(pos, pkg, name, typ)
-	param.SetKind(kind) // ∈ {Recv,Param,Result}Var
-	return param
+	return types.NewParam(pos, pkg, name, typ)
 }
 
 // @@@ Objects
@@ -438,7 +436,7 @@ func (r *reader) obj() (types.Object, []types.Type) {
 		assert(!r.Bool())
 	}
 
-	pkg, name := r.p.objIdx(r.Reloc(pkgbits.SectionObj))
+	pkg, name := r.p.objIdx(r.Reloc(pkgbits.RelocObj))
 	obj := pkgScope(pkg).Lookup(name)
 
 	targs := make([]types.Type, r.Len())
@@ -455,7 +453,7 @@ func (pr *pkgReader) objIdx(idx pkgbits.Index) (*types.Package, string) {
 	var objName string
 	var tag pkgbits.CodeObj
 	{
-		rname := pr.tempReader(pkgbits.SectionName, idx, pkgbits.SyncObject1)
+		rname := pr.tempReader(pkgbits.RelocName, idx, pkgbits.SyncObject1)
 
 		objPkg, objName = rname.qualifiedIdent()
 		assert(objName != "")
@@ -477,7 +475,7 @@ func (pr *pkgReader) objIdx(idx pkgbits.Index) (*types.Package, string) {
 	if objPkg.Scope().Lookup(objName) == nil {
 		dict := pr.objDictIdx(idx)
 
-		r := pr.newReader(pkgbits.SectionObj, idx, pkgbits.SyncObject1)
+		r := pr.newReader(pkgbits.RelocObj, idx, pkgbits.SyncObject1)
 		r.dict = dict
 
 		declare := func(obj types.Object) {
@@ -527,10 +525,9 @@ func (pr *pkgReader) objIdx(idx pkgbits.Index) (*types.Package, string) {
 				methods := make([]*types.Func, iface.NumExplicitMethods())
 				for i := range methods {
 					fn := iface.ExplicitMethod(i)
-					sig := fn.Signature()
+					sig := fn.Type().(*types.Signature)
 
 					recv := types.NewVar(fn.Pos(), fn.Pkg(), "", named)
-					recv.SetKind(types.RecvVar)
 					methods[i] = types.NewFunc(fn.Pos(), fn.Pkg(), fn.Name(), types.NewSignature(recv, sig.Params(), sig.Results(), sig.Variadic()))
 				}
 
@@ -565,7 +562,7 @@ func (pr *pkgReader) objDictIdx(idx pkgbits.Index) *readerDict {
 	var dict readerDict
 
 	{
-		r := pr.tempReader(pkgbits.SectionObjDict, idx, pkgbits.SyncObject1)
+		r := pr.tempReader(pkgbits.RelocObjDict, idx, pkgbits.SyncObject1)
 		if implicits := r.Len(); implicits != 0 {
 			errorf("unexpected object with %v implicit type parameter(s)", implicits)
 		}
@@ -578,7 +575,7 @@ func (pr *pkgReader) objDictIdx(idx pkgbits.Index) *readerDict {
 		dict.derived = make([]derivedInfo, r.Len())
 		dict.derivedTypes = make([]types.Type, len(dict.derived))
 		for i := range dict.derived {
-			dict.derived[i] = derivedInfo{idx: r.Reloc(pkgbits.SectionType)}
+			dict.derived[i] = derivedInfo{idx: r.Reloc(pkgbits.RelocType)}
 			if r.Version().Has(pkgbits.DerivedInfoNeeded) {
 				assert(!r.Bool())
 			}
@@ -650,7 +647,7 @@ func (r *reader) method() *types.Func {
 	pkg, name := r.selector()
 
 	rparams := r.typeParamNames()
-	sig := r.signature(r.param(types.RecvVar), rparams, nil)
+	sig := r.signature(r.param(), rparams, nil)
 
 	_ = r.pos() // TODO(mdempsky): Remove; this is a hacker for linker.go.
 	return types.NewFunc(pos, pkg, name, sig)

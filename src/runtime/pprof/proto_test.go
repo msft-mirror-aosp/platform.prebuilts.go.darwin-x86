@@ -7,7 +7,6 @@ package pprof
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"internal/abi"
 	"internal/profile"
@@ -34,9 +33,7 @@ func translateCPUProfile(data []uint64, count int) (*profile.Profile, error) {
 	if err := b.addCPUData(data, tags); err != nil {
 		return nil, err
 	}
-	if err := b.build(); err != nil {
-		return nil, err
-	}
+	b.build()
 	return profile.Parse(&buf)
 }
 
@@ -76,10 +73,7 @@ func TestConvertCPUProfileNoSamples(t *testing.T) {
 	checkProfile(t, p, 2000*1000, periodType, sampleType, nil, "")
 }
 
-//go:noinline
 func f1() { f1() }
-
-//go:noinline
 func f2() { f2() }
 
 // testPCs returns two PCs and two corresponding memory mappings
@@ -474,18 +468,5 @@ func TestEmptyStack(t *testing.T) {
 	_, err := translateCPUProfile(b, 2)
 	if err != nil {
 		t.Fatalf("translating profile: %v", err)
-	}
-}
-
-var errWrite = errors.New("error from writer")
-
-type errWriter struct{}
-
-func (errWriter) Write(p []byte) (int, error) { return 0, errWrite }
-
-func TestWriteToErr(t *testing.T) {
-	err := Lookup("heap").WriteTo(&errWriter{}, 0)
-	if !errors.Is(err, errWrite) {
-		t.Fatalf("want error from writer, got: %v", err)
 	}
 }

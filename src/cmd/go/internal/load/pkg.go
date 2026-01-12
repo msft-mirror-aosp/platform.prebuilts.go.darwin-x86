@@ -7,15 +7,14 @@ package load
 
 import (
 	"bytes"
-	"cmd/internal/objabi"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"go/build"
 	"go/scanner"
 	"go/token"
-	"internal/godebug"
 	"internal/platform"
 	"io/fs"
 	"os"
@@ -219,26 +218,27 @@ func (p *Package) IsTestOnly() bool {
 type PackageInternal struct {
 	// Unexported fields are not part of the public API.
 	Build             *build.Package
-	Imports           []*Package          // this package's direct imports
-	CompiledImports   []string            // additional Imports necessary when using CompiledGoFiles (all from standard library); 1:1 with the end of PackagePublic.Imports
-	RawImports        []string            // this package's original imports as they appear in the text of the program; 1:1 with the end of PackagePublic.Imports
-	ForceLibrary      bool                // this package is a library (even if named "main")
-	CmdlineFiles      bool                // package built from files listed on command line
-	CmdlinePkg        bool                // package listed on command line
-	CmdlinePkgLiteral bool                // package listed as literal on command line (not via wildcard)
-	Local             bool                // imported via local path (./ or ../)
-	LocalPrefix       string              // interpret ./ and ../ imports relative to this prefix
-	ExeName           string              // desired name for temporary executable
-	FuzzInstrument    bool                // package should be instrumented for fuzzing
-	Cover             CoverSetup          // coverage mode and other setup info of -cover is being applied to this package
-	OmitDebug         bool                // tell linker not to write debug information
-	GobinSubdir       bool                // install target would be subdir of GOBIN
-	BuildInfo         *debug.BuildInfo    // add this info to package main
-	TestmainGo        *[]byte             // content for _testmain.go
-	Embed             map[string][]string // //go:embed comment mapping
-	OrigImportPath    string              // original import path before adding '_test' suffix
-	PGOProfile        string              // path to PGO profile
-	ForMain           string              // the main package if this package is built specifically for it
+	Imports           []*Package           // this package's direct imports
+	CompiledImports   []string             // additional Imports necessary when using CompiledGoFiles (all from standard library); 1:1 with the end of PackagePublic.Imports
+	RawImports        []string             // this package's original imports as they appear in the text of the program; 1:1 with the end of PackagePublic.Imports
+	ForceLibrary      bool                 // this package is a library (even if named "main")
+	CmdlineFiles      bool                 // package built from files listed on command line
+	CmdlinePkg        bool                 // package listed on command line
+	CmdlinePkgLiteral bool                 // package listed as literal on command line (not via wildcard)
+	Local             bool                 // imported via local path (./ or ../)
+	LocalPrefix       string               // interpret ./ and ../ imports relative to this prefix
+	ExeName           string               // desired name for temporary executable
+	FuzzInstrument    bool                 // package should be instrumented for fuzzing
+	Cover             CoverSetup           // coverage mode and other setup info of -cover is being applied to this package
+	CoverVars         map[string]*CoverVar // variables created by coverage analysis
+	OmitDebug         bool                 // tell linker not to write debug information
+	GobinSubdir       bool                 // install target would be subdir of GOBIN
+	BuildInfo         *debug.BuildInfo     // add this info to package main
+	TestmainGo        *[]byte              // content for _testmain.go
+	Embed             map[string][]string  // //go:embed comment mapping
+	OrigImportPath    string               // original import path before adding '_test' suffix
+	PGOProfile        string               // path to PGO profile
+	ForMain           string               // the main package if this package is built specifically for it
 
 	Asmflags   []string // -asmflags for this package
 	Gcflags    []string // -gcflags for this package
@@ -370,6 +370,12 @@ func (p *Package) Resolve(imports []string) []string {
 	}
 	sort.Strings(all)
 	return all
+}
+
+// CoverVar holds the name of the generated coverage variables targeting the named file.
+type CoverVar struct {
+	File string // local file name
+	Var  string // name of count struct
 }
 
 // CoverSetup holds parameters related to coverage setup for a given package (covermode, etc).
@@ -2112,8 +2118,6 @@ func ResolveEmbed(dir string, patterns []string) ([]string, error) {
 	return files, err
 }
 
-var embedfollowsymlinks = godebug.New("embedfollowsymlinks")
-
 // resolveEmbed resolves //go:embed patterns to precise file lists.
 // It sets files to the list of unique files matched (for go list),
 // and it sets pmap to the more precise mapping from
@@ -2198,24 +2202,6 @@ func resolveEmbed(pkgdir string, patterns []string) (files []string, pmap map[st
 					list = append(list, rel)
 				}
 
-			// If the embedfollowsymlinks GODEBUG is set to 1, allow the leaf file to be a
-			// symlink (#59924). We don't allow directories to be symlinks and have already
-			// checked that none of the parent directories of the file are symlinks in the
-			// loop above. The file pointed to by the symlink must be a regular file.
-			case embedfollowsymlinks.Value() == "1" && info.Mode()&fs.ModeType == fs.ModeSymlink:
-				info, err := fsys.Stat(file)
-				if err != nil {
-					return nil, nil, err
-				}
-				if !info.Mode().IsRegular() {
-					return nil, nil, fmt.Errorf("cannot embed irregular file %s", rel)
-				}
-				if have[rel] != pid {
-					embedfollowsymlinks.IncNonDefault()
-					have[rel] = pid
-					list = append(list, rel)
-				}
-
 			case info.IsDir():
 				// Gather all files in the named directory, stopping at module boundaries
 				// and ignoring files that wouldn't be packaged into a module.
@@ -2227,19 +2213,11 @@ func resolveEmbed(pkgdir string, patterns []string) (files []string, pmap map[st
 					rel := filepath.ToSlash(str.TrimFilePathPrefix(path, pkgdir))
 					name := d.Name()
 					if path != file && (isBadEmbedName(name) || ((name[0] == '.' || name[0] == '_') && !all)) {
-						// Avoid hidden files that user may not know about.
+						// Ignore bad names, assuming they won't go into modules.
+						// Also avoid hidden files that user may not know about.
 						// See golang.org/issue/42328.
 						if d.IsDir() {
 							return fs.SkipDir
-						}
-						// Ignore hidden files.
-						if name[0] == '.' || name[0] == '_' {
-							return nil
-						}
-						// Error on bad embed names.
-						// See golang.org/issue/54003.
-						if isBadEmbedName(name) {
-							return fmt.Errorf("cannot embed file %s: invalid name %s", rel, name)
 						}
 						return nil
 					}
@@ -2496,6 +2474,7 @@ func (p *Package) setBuildInfo(ctx context.Context, autoVCS bool) {
 	var repoDir string
 	var vcsCmd *vcs.Cmd
 	var err error
+	const allowNesting = true
 
 	wantVCS := false
 	switch cfg.BuildBuildvcs {
@@ -2515,7 +2494,7 @@ func (p *Package) setBuildInfo(ctx context.Context, autoVCS bool) {
 			// (so the bootstrap toolchain packages don't even appear to be in GOROOT).
 			goto omitVCS
 		}
-		repoDir, vcsCmd, err = vcs.FromDir(base.Cwd(), "")
+		repoDir, vcsCmd, err = vcs.FromDir(base.Cwd(), "", allowNesting)
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			setVCSError(err)
 			return
@@ -2538,11 +2517,10 @@ func (p *Package) setBuildInfo(ctx context.Context, autoVCS bool) {
 	}
 	if repoDir != "" && vcsCmd.Status != nil {
 		// Check that the current directory, package, and module are in the same
-		// repository. vcs.FromDir disallows nested VCS and multiple VCS in the
-		// same repository, unless the GODEBUG allowmultiplevcs is set. The
-		// current directory may be outside p.Module.Dir when a workspace is
-		// used.
-		pkgRepoDir, _, err := vcs.FromDir(p.Dir, "")
+		// repository. vcs.FromDir allows nested Git repositories, but nesting
+		// is not allowed for other VCS tools. The current directory may be outside
+		// p.Module.Dir when a workspace is used.
+		pkgRepoDir, _, err := vcs.FromDir(p.Dir, "", allowNesting)
 		if err != nil {
 			setVCSError(err)
 			return
@@ -2554,7 +2532,7 @@ func (p *Package) setBuildInfo(ctx context.Context, autoVCS bool) {
 			}
 			goto omitVCS
 		}
-		modRepoDir, _, err := vcs.FromDir(p.Module.Dir, "")
+		modRepoDir, _, err := vcs.FromDir(p.Module.Dir, "", allowNesting)
 		if err != nil {
 			setVCSError(err)
 			return
@@ -2585,16 +2563,7 @@ func (p *Package) setBuildInfo(ctx context.Context, autoVCS bool) {
 		}
 		appendSetting("vcs.modified", strconv.FormatBool(st.Uncommitted))
 		// Determine the correct version of this module at the current revision and update the build metadata accordingly.
-		rootModPath := goModPath(repoDir)
-		// If no root module is found, skip embedding VCS data since we cannot determine the module path of the root.
-		if rootModPath == "" {
-			goto omitVCS
-		}
-		codeRoot, _, ok := module.SplitPathVersion(rootModPath)
-		if !ok {
-			goto omitVCS
-		}
-		repo := modfetch.LookupLocal(ctx, codeRoot, p.Module.Path, repoDir)
+		repo := modfetch.LookupLocal(ctx, repoDir)
 		revInfo, err := repo.Stat(ctx, st.Revision)
 		if err != nil {
 			goto omitVCS
@@ -2602,12 +2571,7 @@ func (p *Package) setBuildInfo(ctx context.Context, autoVCS bool) {
 		vers := revInfo.Version
 		if vers != "" {
 			if st.Uncommitted {
-				// SemVer build metadata is dot-separated https://semver.org/#spec-item-10
-				if strings.HasSuffix(vers, "+incompatible") {
-					vers += ".dirty"
-				} else {
-					vers += "+dirty"
-				}
+				vers += "+dirty"
 			}
 			info.Main.Version = vers
 		}
@@ -2663,7 +2627,7 @@ func LinkerDeps(p *Package) ([]string, error) {
 		deps = append(deps, "runtime/asan")
 	}
 	// Building for coverage forces an import of runtime/coverage.
-	if cfg.BuildCover {
+	if cfg.BuildCover && cfg.Experiment.CoverageRedesign {
 		deps = append(deps, "runtime/coverage")
 	}
 
@@ -2927,7 +2891,8 @@ func PackagesAndErrors(ctx context.Context, opts PackageOpts, patterns []string)
 		}
 		matches, _ = modload.LoadPackages(ctx, modOpts, patterns...)
 	} else {
-		matches = search.ImportPaths(patterns)
+		noModRoots := []string{}
+		matches = search.ImportPaths(patterns, noModRoots)
 	}
 
 	var (
@@ -3388,7 +3353,6 @@ func PackagesAndErrorsOutsideModule(ctx context.Context, opts PackageOpts, args 
 			patterns[i] = p
 		}
 	}
-	patterns = search.CleanPatterns(patterns)
 
 	// Query the module providing the first argument, load its go.mod file, and
 	// check that it doesn't contain directives that would cause it to be
@@ -3584,7 +3548,7 @@ func SelectCoverPackages(roots []*Package, match []func(*Package) bool, op strin
 		// $GOROOT/src/internal/coverage/pkid.go dealing with
 		// hard-coding of runtime package IDs.
 		cmode := cfg.BuildCoverMode
-		if cfg.BuildRace && p.Standard && objabi.LookupPkgSpecial(p.ImportPath).Runtime {
+		if cfg.BuildRace && p.Standard && (p.ImportPath == "runtime" || strings.HasPrefix(p.ImportPath, "runtime/internal")) {
 			cmode = "regonly"
 		}
 
@@ -3604,6 +3568,14 @@ func SelectCoverPackages(roots []*Package, match []func(*Package) bool, op strin
 		if cfg.BuildCoverMode == "atomic" {
 			EnsureImport(p, "sync/atomic")
 		}
+
+		// Generate covervars if using legacy coverage design.
+		if !cfg.Experiment.CoverageRedesign {
+			var coverFiles []string
+			coverFiles = append(coverFiles, p.GoFiles...)
+			coverFiles = append(coverFiles, p.CgoFiles...)
+			p.Internal.CoverVars = DeclareCoverVars(p, coverFiles...)
+		}
 	}
 
 	// Warn about -coverpkg arguments that are not actually used.
@@ -3614,4 +3586,43 @@ func SelectCoverPackages(roots []*Package, match []func(*Package) bool, op strin
 	}
 
 	return covered
+}
+
+// DeclareCoverVars attaches the required cover variables names
+// to the files, to be used when annotating the files. This
+// function only called when using legacy coverage test/build
+// (e.g. GOEXPERIMENT=coverageredesign is off).
+func DeclareCoverVars(p *Package, files ...string) map[string]*CoverVar {
+	coverVars := make(map[string]*CoverVar)
+	coverIndex := 0
+	// We create the cover counters as new top-level variables in the package.
+	// We need to avoid collisions with user variables (GoCover_0 is unlikely but still)
+	// and more importantly with dot imports of other covered packages,
+	// so we append 12 hex digits from the SHA-256 of the import path.
+	// The point is only to avoid accidents, not to defeat users determined to
+	// break things.
+	sum := sha256.Sum256([]byte(p.ImportPath))
+	h := fmt.Sprintf("%x", sum[:6])
+	for _, file := range files {
+		if base.IsTestFile(file) {
+			continue
+		}
+		// For a package that is "local" (imported via ./ import or command line, outside GOPATH),
+		// we record the full path to the file name.
+		// Otherwise we record the import path, then a forward slash, then the file name.
+		// This makes profiles within GOPATH file system-independent.
+		// These names appear in the cmd/cover HTML interface.
+		var longFile string
+		if p.Internal.Local {
+			longFile = filepath.Join(p.Dir, file)
+		} else {
+			longFile = pathpkg.Join(p.ImportPath, file)
+		}
+		coverVars[file] = &CoverVar{
+			File: longFile,
+			Var:  fmt.Sprintf("GoCover_%d_%x", coverIndex, h),
+		}
+		coverIndex++
+	}
+	return coverVars
 }

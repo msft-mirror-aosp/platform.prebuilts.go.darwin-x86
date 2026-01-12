@@ -610,8 +610,7 @@ func TestIPv6MulticastListener(t *testing.T) {
 	if !supportsIPv6() {
 		t.Skip("IPv6 is not supported")
 	}
-	// On Windows, the test can be run by non-admin users.
-	if runtime.GOOS != "windows" && os.Getuid() != 0 {
+	if os.Getuid() != 0 {
 		t.Skip("must be root")
 	}
 
@@ -670,7 +669,7 @@ func checkMulticastListener(c *UDPConn, ip IP) error {
 
 func multicastRIBContains(ip IP) (bool, error) {
 	switch runtime.GOOS {
-	case "aix", "dragonfly", "netbsd", "openbsd", "plan9", "solaris", "illumos":
+	case "aix", "dragonfly", "netbsd", "openbsd", "plan9", "solaris", "illumos", "windows":
 		return true, nil // not implemented yet
 	case "linux":
 		if runtime.GOARCH == "arm" || runtime.GOARCH == "alpha" {

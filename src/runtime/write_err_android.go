@@ -4,10 +4,7 @@
 
 package runtime
 
-import (
-	"internal/byteorder"
-	"unsafe"
-)
+import "unsafe"
 
 var (
 	writeHeader = []byte{6 /* ANDROID_LOG_ERROR */, 'G', 'o', 0}
@@ -151,10 +148,18 @@ func writeLogdHeader() int {
 	//      hdr[7:11] nsec unsigned uint32, little endian.
 	hdr[0] = 0 // LOG_ID_MAIN
 	sec, nsec, _ := time_now()
-	byteorder.LEPutUint32(hdr[3:7], uint32(sec))
-	byteorder.LEPutUint32(hdr[7:11], uint32(nsec))
+	packUint32(hdr[3:7], uint32(sec))
+	packUint32(hdr[7:11], uint32(nsec))
 
 	// TODO(hakim):  hdr[1:2] = gettid?
 
 	return 11 + len(writeHeader)
+}
+
+func packUint32(b []byte, v uint32) {
+	// little-endian.
+	b[0] = byte(v)
+	b[1] = byte(v >> 8)
+	b[2] = byte(v >> 16)
+	b[3] = byte(v >> 24)
 }

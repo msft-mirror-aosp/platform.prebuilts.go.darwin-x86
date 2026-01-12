@@ -183,9 +183,16 @@ func (fd *FD) Pread(p []byte, off int64) (int, error) {
 	if fd.IsStream && len(p) > maxRW {
 		p = p[:maxRW]
 	}
-	n, err := ignoringEINTR2(func() (int, error) {
-		return syscall.Pread(fd.Sysfd, p, off)
-	})
+	var (
+		n   int
+		err error
+	)
+	for {
+		n, err = syscall.Pread(fd.Sysfd, p, off)
+		if err != syscall.EINTR {
+			break
+		}
+	}
 	if err != nil {
 		n = 0
 	}

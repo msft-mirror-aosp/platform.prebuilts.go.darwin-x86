@@ -27,7 +27,6 @@ func test42018(t *testing.T) {
 	recurseHWND(400, hwnd, uintptr(unsafe.Pointer(&i)))
 }
 
-//go:noinline
 func recurseHANDLE(n int, p C.HANDLE, v uintptr) {
 	if n > 0 {
 		recurseHANDLE(n-1, p, v)
@@ -37,7 +36,6 @@ func recurseHANDLE(n int, p C.HANDLE, v uintptr) {
 	}
 }
 
-//go:noinline
 func recurseHWND(n int, p C.HWND, v uintptr) {
 	if n > 0 {
 		recurseHWND(n-1, p, v)

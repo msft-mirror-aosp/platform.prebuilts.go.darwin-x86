@@ -8,4 +8,4 @@ package big
 
 import "internal/cpu"
 
-var hasADX = cpu.X86.HasADX && cpu.X86.HasBMI2
+var support_adx = cpu.X86.HasADX && cpu.X86.HasBMI2

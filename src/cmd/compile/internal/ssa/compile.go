@@ -169,9 +169,9 @@ func Compile(f *Func) {
 func (f *Func) DumpFileForPhase(phaseName string) io.WriteCloser {
 	f.dumpFileSeq++
 	fname := fmt.Sprintf("%s_%02d__%s.dump", f.Name, int(f.dumpFileSeq), phaseName)
-	fname = strings.ReplaceAll(fname, " ", "_")
-	fname = strings.ReplaceAll(fname, "/", "_")
-	fname = strings.ReplaceAll(fname, ":", "_")
+	fname = strings.Replace(fname, " ", "_", -1)
+	fname = strings.Replace(fname, "/", "_", -1)
+	fname = strings.Replace(fname, ":", "_", -1)
 
 	if ssaDir := os.Getenv("GOSSADIR"); ssaDir != "" {
 		fname = filepath.Join(ssaDir, fname)
@@ -264,7 +264,7 @@ func PhaseOption(phase, flag string, val int, valString string) string {
 		lastcr := 0
 		phasenames := "    check, all, build, intrinsics, genssa"
 		for _, p := range passes {
-			pn := strings.ReplaceAll(p.name, " ", "_")
+			pn := strings.Replace(p.name, " ", "_", -1)
 			if len(pn)+len(phasenames)-lastcr > 70 {
 				phasenames += "\n    "
 				lastcr = len(phasenames)
@@ -400,7 +400,7 @@ commas. For example:
 		return ""
 	}
 
-	underphase := strings.ReplaceAll(phase, "_", " ")
+	underphase := strings.Replace(phase, "_", " ", -1)
 	var re *regexp.Regexp
 	if phase[0] == '~' {
 		r, ok := regexp.Compile(underphase[1:])
@@ -488,7 +488,6 @@ var passes = [...]pass{
 	{name: "lower", fn: lower, required: true},
 	{name: "addressing modes", fn: addressingModes, required: false},
 	{name: "late lower", fn: lateLower, required: true},
-	{name: "pair", fn: pair},
 	{name: "lowered deadcode for cse", fn: deadcode}, // deadcode immediately before CSE avoids CSE making dead values live again
 	{name: "lowered cse", fn: cse},
 	{name: "elim unread autos", fn: elimUnreadAutos},

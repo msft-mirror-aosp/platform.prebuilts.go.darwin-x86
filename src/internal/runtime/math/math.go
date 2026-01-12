@@ -6,13 +6,7 @@ package math
 
 import "internal/goarch"
 
-const (
-	MaxUint32  = ^uint32(0)
-	MaxUint64  = ^uint64(0)
-	MaxUintptr = ^uintptr(0)
-
-	MaxInt64 = int64(MaxUint64 >> 1)
-)
+const MaxUintptr = ^uintptr(0)
 
 // MulUintptr returns a * b and whether the multiplication overflowed.
 // On supported platforms this is an intrinsic lowered by the compiler.

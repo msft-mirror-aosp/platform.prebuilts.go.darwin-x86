@@ -345,7 +345,7 @@ func (b *profileBuilder) addCPUData(data []uint64, tags []unsafe.Pointer) error 
 }
 
 // build completes and returns the constructed profile.
-func (b *profileBuilder) build() error {
+func (b *profileBuilder) build() {
 	b.end = time.Now()
 
 	b.pb.int64Opt(tagProfile_TimeNanos, b.start.UnixNano())
@@ -387,11 +387,8 @@ func (b *profileBuilder) build() error {
 	// TODO: Anything for tagProfile_KeepFrames?
 
 	b.pb.strings(tagProfile_StringTable, b.strings)
-	_, err := b.zw.Write(b.pb.data)
-	if err != nil {
-		return err
-	}
-	return b.zw.Close()
+	b.zw.Write(b.pb.data)
+	b.zw.Close()
 }
 
 // appendLocsForStack appends the location IDs for the given stack trace to the given

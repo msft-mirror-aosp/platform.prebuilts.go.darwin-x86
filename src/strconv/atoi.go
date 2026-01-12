@@ -204,12 +204,11 @@ func ParseInt(s string, base int, bitSize int) (i int64, err error) {
 	// Pick off leading sign.
 	s0 := s
 	neg := false
-	switch s[0] {
-	case '+':
+	if s[0] == '+' {
 		s = s[1:]
-	case '-':
-		s = s[1:]
+	} else if s[0] == '-' {
 		neg = true
+		s = s[1:]
 	}
 
 	// Convert unsigned and check range.

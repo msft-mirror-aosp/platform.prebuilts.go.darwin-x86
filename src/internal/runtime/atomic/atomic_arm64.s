@@ -192,14 +192,13 @@ load_store_loop:
 	RET
 #endif
 
-// func Cas(ptr *uint32, old, new uint32) bool
+// bool Cas(uint32 *ptr, uint32 old, uint32 new)
 // Atomically:
-//	if *ptr == old {
-//		*ptr = new
-//		return true
-//	} else {
-//		return false
-// 	}
+//	if(*val == old){
+//		*val = new;
+//		return 1;
+//	} else
+//		return 0;
 TEXT ·Cas(SB), NOSPLIT, $0-17
 	MOVD	ptr+0(FP), R0
 	MOVW	old+8(FP), R1
@@ -227,14 +226,14 @@ ok:
 	RET
 #endif
 
-// func Cas64(ptr *uint64, old, new uint64) bool
+// bool ·Cas64(uint64 *ptr, uint64 old, uint64 new)
 // Atomically:
-//	if *ptr == old {
-//		*ptr = new
-//		return true
-//	} else {
-//		return false
-//	}
+//      if(*val == old){
+//              *val = new;
+//              return 1;
+//      } else {
+//              return 0;
+//      }
 TEXT ·Cas64(SB), NOSPLIT, $0-25
 	MOVD	ptr+0(FP), R0
 	MOVD	old+8(FP), R1

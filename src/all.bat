@@ -6,11 +6,17 @@
 
 setlocal
 
-if not exist make.bat (
-    echo all.bat must be run from go\src
-    exit /b 1
-)
+if exist make.bat goto ok
+echo all.bat must be run from go\src
+:: cannot exit: would kill parent command interpreter
+goto end
+:ok
 
-call .\make.bat --no-banner || exit /b 1
-call .\run.bat --no-rebuild || exit /b 1
-..\bin\go tool dist banner
+call .\make.bat --no-banner --no-local
+if %GOBUILDFAIL%==1 goto end
+call .\run.bat --no-rebuild --no-local
+if %GOBUILDFAIL%==1 goto end
+"%GOTOOLDIR%/dist" banner
+
+:end
+if x%GOBUILDEXIT%==x1 exit %GOBUILDFAIL%

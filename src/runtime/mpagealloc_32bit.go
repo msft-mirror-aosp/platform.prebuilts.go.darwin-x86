@@ -71,12 +71,12 @@ func (p *pageAlloc) sysInit(test bool) {
 	totalSize = alignUp(totalSize, physPageSize)
 
 	// Reserve memory for all levels in one go. There shouldn't be much for 32-bit.
-	reservation := sysReserve(nil, totalSize, "page summary")
+	reservation := sysReserve(nil, totalSize)
 	if reservation == nil {
 		throw("failed to reserve page summary memory")
 	}
 	// There isn't much. Just map it and mark it as used immediately.
-	sysMap(reservation, totalSize, p.sysStat, "page summary")
+	sysMap(reservation, totalSize, p.sysStat)
 	sysUsed(reservation, totalSize, totalSize)
 	p.summaryMappedReady += totalSize
 
@@ -123,7 +123,7 @@ func (s *scavengeIndex) sysInit(test bool, sysStat *sysMemStat) (mappedReady uin
 	if test {
 		// Set up the scavenge index via sysAlloc so the test can free it later.
 		scavIndexSize := uintptr(len(scavengeIndexArray)) * unsafe.Sizeof(atomicScavChunkData{})
-		s.chunks = ((*[(1 << heapAddrBits) / pallocChunkBytes]atomicScavChunkData)(sysAlloc(scavIndexSize, sysStat, vmaNamePageAllocIndex)))[:]
+		s.chunks = ((*[(1 << heapAddrBits) / pallocChunkBytes]atomicScavChunkData)(sysAlloc(scavIndexSize, sysStat)))[:]
 		mappedReady = scavIndexSize
 	} else {
 		// Set up the scavenge index.

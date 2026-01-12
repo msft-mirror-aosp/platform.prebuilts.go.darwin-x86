@@ -6,14 +6,14 @@
 package fips140tls
 
 import (
-	"crypto/fips140"
+	"crypto/internal/fips140"
 	"sync/atomic"
 )
 
 var required atomic.Bool
 
 func init() {
-	if fips140.Enabled() {
+	if fips140.Enabled {
 		Force()
 	}
 }

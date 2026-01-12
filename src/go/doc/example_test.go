@@ -328,7 +328,7 @@ func exampleNames(exs []*doc.Example) (out []string) {
 }
 
 func mustParse(fset *token.FileSet, filename, src string) *ast.File {
-	f, err := parser.ParseFile(fset, filename, src, parser.ParseComments|parser.SkipObjectResolution)
+	f, err := parser.ParseFile(fset, filename, src, parser.ParseComments)
 	if err != nil {
 		panic(err)
 	}

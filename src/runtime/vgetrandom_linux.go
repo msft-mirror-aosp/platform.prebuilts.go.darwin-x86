@@ -40,13 +40,13 @@ func vgetrandomInit() {
 	vgetrandomAlloc.mmapProt = int32(params.MmapProt)
 	vgetrandomAlloc.mmapFlags = int32(params.MmapFlags)
 
-	lockInit(&vgetrandomAlloc.statesLock, lockRankVgetrandom)
+	lockInit(&vgetrandomAlloc.statesLock, lockRankLeafRank)
 }
 
 func vgetrandomGetState() uintptr {
 	lock(&vgetrandomAlloc.statesLock)
 	if len(vgetrandomAlloc.states) == 0 {
-		num := uintptr(numCPUStartup) // Just a reasonable size hint to start.
+		num := uintptr(ncpu) // Just a reasonable size hint to start.
 		stateSizeCacheAligned := (vgetrandomAlloc.stateSize + cpu.CacheLineSize - 1) &^ (cpu.CacheLineSize - 1)
 		allocSize := (num*stateSizeCacheAligned + physPageSize - 1) &^ (physPageSize - 1)
 		num = (physPageSize / stateSizeCacheAligned) * (allocSize / physPageSize)
@@ -55,7 +55,6 @@ func vgetrandomGetState() uintptr {
 			unlock(&vgetrandomAlloc.statesLock)
 			return 0
 		}
-		setVMAName(p, allocSize, "getrandom states")
 		newBlock := uintptr(p)
 		if vgetrandomAlloc.states == nil {
 			vgetrandomAlloc.states = make([]uintptr, 0, num)
@@ -74,16 +73,9 @@ func vgetrandomGetState() uintptr {
 	return state
 }
 
-// Free vgetrandom state from the M (if any) prior to destroying the M.
-//
-// This may allocate, so it must have a P.
-func vgetrandomDestroy(mp *m) {
-	if mp.vgetrandomState == 0 {
-		return
-	}
-
+func vgetrandomPutState(state uintptr) {
 	lock(&vgetrandomAlloc.statesLock)
-	vgetrandomAlloc.states = append(vgetrandomAlloc.states, mp.vgetrandomState)
+	vgetrandomAlloc.states = append(vgetrandomAlloc.states, state)
 	unlock(&vgetrandomAlloc.statesLock)
 }
 

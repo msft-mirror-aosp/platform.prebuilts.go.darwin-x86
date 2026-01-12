@@ -6,12 +6,17 @@
 
 #include "textflag.h"
 
-// func blockS390X(dig *digest, p []byte)
-TEXT ·blockS390X(SB), NOSPLIT|NOFRAME, $0-32
+// func block(dig *digest, p []byte)
+TEXT ·block(SB), NOSPLIT|NOFRAME, $0-32
+	MOVBZ  ·useAsm(SB), R4
 	LMG    dig+0(FP), R1, R3            // R2 = &p[0], R3 = len(p)
 	MOVBZ  $1, R0                       // SHA-1 function code
+	CMPBEQ R4, $0, generic
 
 loop:
 	KIMD R0, R2      // compute intermediate message digest (KIMD)
 	BVS  loop        // continue if interrupted
 	RET
+
+generic:
+	BR ·blockGeneric(SB)

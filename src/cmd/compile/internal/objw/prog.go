@@ -116,7 +116,10 @@ func (pp *Progs) Flush() {
 func (pp *Progs) Free() {
 	if base.Ctxt.CanReuseProgs() {
 		// Clear progs to enable GC and avoid abuse.
-		clear(pp.Cache[:pp.CacheIndex])
+		s := pp.Cache[:pp.CacheIndex]
+		for i := range s {
+			s[i] = obj.Prog{}
+		}
 	}
 	// Clear pp to avoid abuse.
 	*pp = Progs{}

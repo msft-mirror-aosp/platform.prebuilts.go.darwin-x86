@@ -42,6 +42,8 @@ func isBasic(t Type, info BasicInfo) bool {
 // The allX predicates below report whether t is an X.
 // If t is a type parameter the result is true if isX is true
 // for all specified types of the type parameter's type set.
+// allX is an optimized version of isX(coreType(t)) (which
+// is the same as underIs(t, isX)).
 
 func allBoolean(t Type) bool         { return allBasic(t, IsBoolean) }
 func allInteger(t Type) bool         { return allBasic(t, IsInteger) }
@@ -54,6 +56,7 @@ func allNumericOrString(t Type) bool { return allBasic(t, IsNumeric|IsString) }
 // allBasic reports whether under(t) is a basic type with the specified info.
 // If t is a type parameter, the result is true if isBasic(t, info) is true
 // for all specific types of the type parameter's type set.
+// allBasic(t, info) is an optimized version of isBasic(coreType(t), info).
 func allBasic(t Type, info BasicInfo) bool {
 	if tpar, _ := Unalias(t).(*TypeParam); tpar != nil {
 		return tpar.is(func(t *term) bool { return t != nil && isBasic(t.typ, info) })
@@ -151,15 +154,14 @@ func isGeneric(t Type) bool {
 
 // Comparable reports whether values of type T are comparable.
 func Comparable(T Type) bool {
-	return comparableType(T, true, nil) == nil
+	return comparableType(T, true, nil, nil)
 }
 
-// If T is comparable, comparableType returns nil.
-// Otherwise it returns a type error explaining why T is not comparable.
 // If dynamic is set, non-type parameter interfaces are always comparable.
-func comparableType(T Type, dynamic bool, seen map[Type]bool) *typeError {
+// If reportf != nil, it may be used to report why T is not comparable.
+func comparableType(T Type, dynamic bool, seen map[Type]bool, reportf func(string, ...interface{})) bool {
 	if seen[T] {
-		return nil
+		return true
 	}
 	if seen == nil {
 		seen = make(map[Type]bool)
@@ -168,43 +170,43 @@ func comparableType(T Type, dynamic bool, seen map[Type]bool) *typeError {
 
 	switch t := under(T).(type) {
 	case *Basic:
-		// assume invalid types to be comparable to avoid follow-up errors
-		if t.kind == UntypedNil {
-			return typeErrorf("")
-		}
-
+		// assume invalid types to be comparable
+		// to avoid follow-up errors
+		return t.kind != UntypedNil
 	case *Pointer, *Chan:
-		// always comparable
-
+		return true
 	case *Struct:
 		for _, f := range t.fields {
-			if comparableType(f.typ, dynamic, seen) != nil {
-				return typeErrorf("struct containing %s cannot be compared", f.typ)
+			if !comparableType(f.typ, dynamic, seen, nil) {
+				if reportf != nil {
+					reportf("struct containing %s cannot be compared", f.typ)
+				}
+				return false
 			}
 		}
-
+		return true
 	case *Array:
-		if comparableType(t.elem, dynamic, seen) != nil {
-			return typeErrorf("%s cannot be compared", T)
+		if !comparableType(t.elem, dynamic, seen, nil) {
+			if reportf != nil {
+				reportf("%s cannot be compared", t)
+			}
+			return false
 		}
-
+		return true
 	case *Interface:
 		if dynamic && !isTypeParam(T) || t.typeSet().IsComparable(seen) {
-			return nil
+			return true
 		}
-		var cause string
-		if t.typeSet().IsEmpty() {
-			cause = "empty type set"
-		} else {
-			cause = "incomparable types in type set"
+		if reportf != nil {
+			if t.typeSet().IsEmpty() {
+				reportf("empty type set")
+			} else {
+				reportf("incomparable types in type set")
+			}
 		}
-		return typeErrorf(cause)
-
-	default:
-		return typeErrorf("")
+		// fallthrough
 	}
-
-	return nil
+	return false
 }
 
 // hasNil reports whether type t includes the nil value.

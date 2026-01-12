@@ -47,7 +47,5 @@ func dumpasmhdr() {
 		}
 	}
 
-	if err := b.Close(); err != nil {
-		base.Fatalf("%v", err)
-	}
+	b.Close()
 }

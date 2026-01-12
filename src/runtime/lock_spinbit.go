@@ -2,14 +2,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build !wasm
+//go:build (aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || plan9 || solaris || windows) && goexperiment.spinbitmutex
 
 package runtime
 
 import (
 	"internal/goarch"
 	"internal/runtime/atomic"
-	"internal/runtime/gc"
 	"unsafe"
 )
 
@@ -61,7 +60,7 @@ const (
 	mutexSpinning    = 0x100
 	mutexStackLocked = 0x200
 	mutexMMask       = 0x3FF
-	mutexMOffset     = gc.MallocHeaderSize // alignment of heap-allocated Ms (those other than m0)
+	mutexMOffset     = mallocHeaderSize // alignment of heap-allocated Ms (those other than m0)
 
 	mutexActiveSpinCount  = 4
 	mutexActiveSpinSize   = 30
@@ -86,13 +85,12 @@ func key8(p *uintptr) *uint8 {
 // forming a singly-linked list with the mutex's key field pointing to the head
 // of the list.
 type mWaitList struct {
-	next       muintptr // next m waiting for lock
-	startTicks int64    // when this m started waiting for the current lock holder, in cputicks
+	next muintptr // next m waiting for lock
 }
 
 // lockVerifyMSize confirms that we can recreate the low bits of the M pointer.
 func lockVerifyMSize() {
-	size := roundupsize(unsafe.Sizeof(mPadded{}), false) + gc.MallocHeaderSize
+	size := roundupsize(unsafe.Sizeof(m{}), false) + mallocHeaderSize
 	if size&mutexMMask != 0 {
 		print("M structure uses sizeclass ", size, "/", hex(size), " bytes; ",
 			"incompatible with mutex flag mask ", hex(mutexMMask), "\n")
@@ -145,7 +143,7 @@ func mutexPreferLowLatency(l *mutex) bool {
 }
 
 func mutexContended(l *mutex) bool {
-	return atomic.Loaduintptr(&l.key)&^mutexMMask != 0
+	return atomic.Loaduintptr(&l.key) > mutexLocked
 }
 
 func lock(l *mutex) {
@@ -171,15 +169,16 @@ func lock2(l *mutex) {
 	}
 	semacreate(gp.m)
 
-	var startTime int64
+	timer := &lockTimer{lock: l}
+	timer.begin()
 	// On uniprocessors, no point spinning.
 	// On multiprocessors, spin for mutexActiveSpinCount attempts.
 	spin := 0
-	if numCPUStartup > 1 {
+	if ncpu > 1 {
 		spin = mutexActiveSpinCount
 	}
 
-	var weSpin, atTail, haveTimers bool
+	var weSpin, atTail bool
 	v := atomic.Loaduintptr(&l.key)
 tryAcquire:
 	for i := 0; ; i++ {
@@ -192,13 +191,13 @@ tryAcquire:
 					next = next &^ mutexSleeping
 				}
 				if atomic.Casuintptr(&l.key, v, next) {
-					gp.m.mLockProfile.end(startTime)
+					timer.end()
 					return
 				}
 			} else {
 				prev8 := atomic.Xchg8(k8, mutexLocked|mutexSleeping)
 				if prev8&mutexLocked == 0 {
-					gp.m.mLockProfile.end(startTime)
+					timer.end()
 					return
 				}
 			}
@@ -228,13 +227,6 @@ tryAcquire:
 			throw("runtime·lock: sleeping while lock is available")
 		}
 
-		// Collect times for mutex profile (seen in unlock2 only via mWaitList),
-		// and for "/sync/mutex/wait/total:seconds" metric (to match).
-		if !haveTimers {
-			gp.m.mWaitList.startTicks = cputicks()
-			startTime = gp.m.mLockProfile.start()
-			haveTimers = true
-		}
 		// Store the current head of the list of sleeping Ms in our gp.m.mWaitList.next field
 		gp.m.mWaitList.next = mutexWaitListHead(v)
 
@@ -267,54 +259,16 @@ func unlock(l *mutex) {
 func unlock2(l *mutex) {
 	gp := getg()
 
-	var prev8 uint8
-	var haveStackLock bool
-	var endTicks int64
-	if !mutexSampleContention() {
-		// Not collecting a sample for the contention profile, do the quick release
-		prev8 = atomic.Xchg8(key8(&l.key), 0)
-	} else {
-		// If there's contention, we'll sample it. Don't allow another
-		// lock2/unlock2 pair to finish before us and take our blame. Prevent
-		// that by trading for the stack lock with a CAS.
-		v := atomic.Loaduintptr(&l.key)
-		for {
-			if v&^mutexMMask == 0 || v&mutexStackLocked != 0 {
-				// No contention, or (stack lock unavailable) no way to calculate it
-				prev8 = atomic.Xchg8(key8(&l.key), 0)
-				endTicks = 0
-				break
-			}
-
-			// There's contention, the stack lock appeared to be available, and
-			// we'd like to collect a sample for the contention profile.
-			if endTicks == 0 {
-				// Read the time before releasing the lock. The profile will be
-				// strictly smaller than what other threads would see by timing
-				// their lock calls.
-				endTicks = cputicks()
-			}
-			next := (v | mutexStackLocked) &^ (mutexLocked | mutexSleeping)
-			if atomic.Casuintptr(&l.key, v, next) {
-				haveStackLock = true
-				prev8 = uint8(v)
-				// The fast path of lock2 may have cleared mutexSleeping.
-				// Restore it so we're sure to call unlock2Wake below.
-				prev8 |= mutexSleeping
-				break
-			}
-			v = atomic.Loaduintptr(&l.key)
-		}
-	}
+	prev8 := atomic.Xchg8(key8(&l.key), 0)
 	if prev8&mutexLocked == 0 {
 		throw("unlock of unlocked lock")
 	}
 
 	if prev8&mutexSleeping != 0 {
-		unlock2Wake(l, haveStackLock, endTicks)
+		unlock2Wake(l)
 	}
 
-	gp.m.mLockProfile.store()
+	gp.m.mLockProfile.recordUnlock(l)
 	gp.m.locks--
 	if gp.m.locks < 0 {
 		throw("runtime·unlock: lock count")
@@ -324,35 +278,15 @@ func unlock2(l *mutex) {
 	}
 }
 
-// mutexSampleContention returns whether the current mutex operation should
-// report any contention it discovers.
-func mutexSampleContention() bool {
-	if rate := int64(atomic.Load64(&mutexprofilerate)); rate <= 0 {
-		return false
-	} else {
-		// TODO: have SetMutexProfileFraction do the clamping
-		rate32 := uint32(rate)
-		if int64(rate32) != rate {
-			rate32 = ^uint32(0)
-		}
-		return cheaprandn(rate32) == 0
-	}
-}
-
 // unlock2Wake updates the list of Ms waiting on l, waking an M if necessary.
 //
 //go:nowritebarrier
-func unlock2Wake(l *mutex, haveStackLock bool, endTicks int64) {
+func unlock2Wake(l *mutex) {
 	v := atomic.Loaduintptr(&l.key)
 
 	// On occasion, seek out and wake the M at the bottom of the stack so it
 	// doesn't starve.
 	antiStarve := cheaprandn(mutexTailWakePeriod) == 0
-
-	if haveStackLock {
-		goto useStackLock
-	}
-
 	if !(antiStarve || // avoiding starvation may require a wake
 		v&mutexSpinning == 0 || // no spinners means we must wake
 		mutexPreferLowLatency(l)) { // prefer waiters be awake as much as possible
@@ -389,30 +323,6 @@ func unlock2Wake(l *mutex, haveStackLock bool, endTicks int64) {
 	// We own the mutexStackLocked flag. New Ms may push themselves onto the
 	// stack concurrently, but we're now the only thread that can remove or
 	// modify the Ms that are sleeping in the list.
-useStackLock:
-
-	if endTicks != 0 {
-		// Find the M at the bottom of the stack of waiters, which has been
-		// asleep for the longest. Take the average of its wait time and the
-		// head M's wait time for the mutex contention profile, matching the
-		// estimate we do in semrelease1 (for sync.Mutex contention).
-		//
-		// We don't keep track of the tail node (we don't need it often), so do
-		// an O(N) walk on the list of sleeping Ms to find it.
-		head := mutexWaitListHead(v).ptr()
-		for node, n := head, 0; ; {
-			n++
-			next := node.mWaitList.next.ptr()
-			if next == nil {
-				cycles := ((endTicks - head.mWaitList.startTicks) + (endTicks - node.mWaitList.startTicks)) / 2
-				node.mWaitList.startTicks = endTicks
-				head.mWaitList.startTicks = endTicks
-				getg().m.mLockProfile.recordUnlock(cycles * int64(n))
-				break
-			}
-			node = next
-		}
-	}
 
 	var committed *m // If we choose an M within the stack, we've made a promise to wake it
 	for {
@@ -438,14 +348,8 @@ useStackLock:
 					prev, wakem = wakem, next
 				}
 				if wakem != mp {
-					committed = wakem
 					prev.mWaitList.next = wakem.mWaitList.next
-					// An M sets its own startTicks when it first goes to sleep.
-					// When an unlock operation is sampled for the mutex
-					// contention profile, it takes blame for the entire list of
-					// waiting Ms but only updates the startTicks value at the
-					// tail. Copy any updates to the next-oldest M.
-					prev.mWaitList.startTicks = wakem.mWaitList.startTicks
+					committed = wakem
 				}
 			}
 		}
@@ -460,7 +364,7 @@ useStackLock:
 				// Claimed an M. Wake it.
 				semawakeup(wakem)
 			}
-			return
+			break
 		}
 
 		v = atomic.Loaduintptr(&l.key)

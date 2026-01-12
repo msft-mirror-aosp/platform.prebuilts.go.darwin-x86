@@ -7,10 +7,9 @@ package hkdf
 import (
 	"crypto/internal/fips140"
 	"crypto/internal/fips140/hmac"
-	"hash"
 )
 
-func Extract[H hash.Hash](h func() H, secret, salt []byte) []byte {
+func Extract[H fips140.Hash](h func() H, secret, salt []byte) []byte {
 	if len(secret) < 112/8 {
 		fips140.RecordNonApproved()
 	}
@@ -24,7 +23,7 @@ func Extract[H hash.Hash](h func() H, secret, salt []byte) []byte {
 	return extractor.Sum(nil)
 }
 
-func Expand[H hash.Hash](h func() H, pseudorandomKey []byte, info string, keyLen int) []byte {
+func Expand[H fips140.Hash](h func() H, pseudorandomKey []byte, info string, keyLen int) []byte {
 	out := make([]byte, 0, keyLen)
 	expander := hmac.New(h, pseudorandomKey)
 	hmac.MarkAsUsedInKDF(expander)
@@ -51,7 +50,7 @@ func Expand[H hash.Hash](h func() H, pseudorandomKey []byte, info string, keyLen
 	return out
 }
 
-func Key[H hash.Hash](h func() H, secret, salt []byte, info string, keyLen int) []byte {
+func Key[H fips140.Hash](h func() H, secret, salt []byte, info string, keyLen int) []byte {
 	prk := Extract(h, secret, salt)
 	return Expand(h, prk, info, keyLen)
 }

@@ -10,12 +10,3 @@
 #define hasZbb
 #define hasZbs
 #endif
-
-#ifdef GORISCV64_rva23u64
-#define hasV
-#define hasZba
-#define hasZbb
-#define hasZbs
-#define hasZfa
-#define hasZicond
-#endif

@@ -23,7 +23,7 @@ func TestFakeTime(t *testing.T) {
 
 	// Faketime is advanced in checkdead. External linking brings in cgo,
 	// causing checkdead not working.
-	testenv.MustInternalLink(t, deadlockBuildTypes)
+	testenv.MustInternalLink(t, false)
 
 	t.Parallel()
 

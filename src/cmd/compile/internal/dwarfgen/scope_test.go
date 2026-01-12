@@ -226,7 +226,7 @@ func TestScopeRanges(t *testing.T) {
 	defer f.Close()
 
 	// the compiler uses forward slashes for paths even on windows
-	src = strings.ReplaceAll(src, "\\", "/")
+	src = strings.Replace(src, "\\", "/", -1)
 
 	pcln, err := f.PCLineTable()
 	if err != nil {

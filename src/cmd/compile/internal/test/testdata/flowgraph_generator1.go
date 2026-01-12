@@ -99,7 +99,7 @@ var labels string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 func blocks(spec string) (blocks []string, fnameBase string) {
 	spec = strings.ToUpper(spec)
 	blocks = strings.Split(spec, ",")
-	fnameBase = strings.ReplaceAll(spec, ",", "_")
+	fnameBase = strings.Replace(spec, ",", "_", -1)
 	return
 }
 

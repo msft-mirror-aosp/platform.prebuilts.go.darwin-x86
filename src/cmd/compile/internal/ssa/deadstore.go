@@ -52,10 +52,11 @@ func dse(f *Func) {
 				if v.Op == OpLocalAddr {
 					if _, ok := localAddrs[v.Aux]; !ok {
 						localAddrs[v.Aux] = v
+					} else {
+						continue
 					}
-					continue
 				}
-				if v.Op == OpInlMark || v.Op == OpConvert {
+				if v.Op == OpInlMark {
 					// Not really a use of the memory. See #67957.
 					continue
 				}

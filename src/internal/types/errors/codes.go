@@ -719,7 +719,10 @@ const (
 
 	// MisplacedDotDotDot occurs when a "..." is used somewhere other than the
 	// final argument in a function declaration.
-	_ // not used anymore (error reported by parser)
+	//
+	// Example:
+	// 	func f(...int, int)
+	MisplacedDotDotDot
 
 	_ // InvalidDotDotDotOperand was removed.
 

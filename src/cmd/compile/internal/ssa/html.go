@@ -29,7 +29,7 @@ type HTMLWriter struct {
 }
 
 func NewHTMLWriter(path string, f *Func, cfgMask string) *HTMLWriter {
-	path = strings.ReplaceAll(path, "/", string(filepath.Separator))
+	path = strings.Replace(path, "/", string(filepath.Separator), -1)
 	out, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		f.Fatalf("%v", err)
@@ -929,7 +929,7 @@ func (w *HTMLWriter) WriteMultiTitleColumn(phase string, titles []string, class,
 	if w == nil {
 		return
 	}
-	id := strings.ReplaceAll(phase, " ", "-")
+	id := strings.Replace(phase, " ", "-", -1)
 	// collapsed column
 	w.Printf("<td id=\"%v-col\" class=\"collapsed\"><div>%v</div></td>", id, phase)
 
@@ -1089,7 +1089,7 @@ func (d *dotWriter) writeFuncSVG(w io.Writer, phase string, f *Func) {
 		return
 	}
 	fmt.Fprint(pipe, `digraph "" { margin=0; ranksep=.2; `)
-	id := strings.ReplaceAll(phase, " ", "-")
+	id := strings.Replace(phase, " ", "-", -1)
 	fmt.Fprintf(pipe, `id="g_graph_%s";`, id)
 	fmt.Fprintf(pipe, `node [style=filled,fillcolor=white,fontsize=16,fontname="Menlo,Times,serif",margin="0.01,0.03"];`)
 	fmt.Fprintf(pipe, `edge [fontsize=16,fontname="Menlo,Times,serif"];`)
@@ -1270,7 +1270,7 @@ func newDotWriter(mask string) *dotWriter {
 		return nil
 	}
 	// User can specify phase name with _ instead of spaces.
-	mask = strings.ReplaceAll(mask, "_", " ")
+	mask = strings.Replace(mask, "_", " ", -1)
 	ph := make(map[string]bool)
 	ranges := strings.Split(mask, ",")
 	for _, r := range ranges {

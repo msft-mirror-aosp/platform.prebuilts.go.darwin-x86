@@ -391,7 +391,6 @@ func parseRFC2821Mailbox(in string) (mailbox rfc2821Mailbox, ok bool) {
 // domainToReverseLabels converts a textual domain name like foo.example.com to
 // the list of labels in reverse order, e.g. ["com", "example", "foo"].
 func domainToReverseLabels(domain string) (reverseLabels []string, ok bool) {
-	reverseLabels = make([]string, 0, strings.Count(domain, ".")+1)
 	for len(domain) > 0 {
 		if i := strings.LastIndexByte(domain, '.'); i == -1 {
 			reverseLabels = append(reverseLabels, domain)
@@ -429,7 +428,7 @@ func domainToReverseLabels(domain string) (reverseLabels []string, ok bool) {
 	return reverseLabels, true
 }
 
-func matchEmailConstraint(mailbox rfc2821Mailbox, constraint string, reversedDomainsCache map[string][]string, reversedConstraintsCache map[string][]string) (bool, error) {
+func matchEmailConstraint(mailbox rfc2821Mailbox, constraint string) (bool, error) {
 	// If the constraint contains an @, then it specifies an exact mailbox
 	// name.
 	if strings.Contains(constraint, "@") {
@@ -442,10 +441,10 @@ func matchEmailConstraint(mailbox rfc2821Mailbox, constraint string, reversedDom
 
 	// Otherwise the constraint is like a DNS constraint of the domain part
 	// of the mailbox.
-	return matchDomainConstraint(mailbox.domain, constraint, reversedDomainsCache, reversedConstraintsCache)
+	return matchDomainConstraint(mailbox.domain, constraint)
 }
 
-func matchURIConstraint(uri *url.URL, constraint string, reversedDomainsCache map[string][]string, reversedConstraintsCache map[string][]string) (bool, error) {
+func matchURIConstraint(uri *url.URL, constraint string) (bool, error) {
 	// From RFC 5280, Section 4.2.1.10:
 	// “a uniformResourceIdentifier that does not include an authority
 	// component with a host name specified as a fully qualified domain
@@ -474,7 +473,7 @@ func matchURIConstraint(uri *url.URL, constraint string, reversedDomainsCache ma
 		return false, fmt.Errorf("URI with IP (%q) cannot be matched against constraints", uri.String())
 	}
 
-	return matchDomainConstraint(host, constraint, reversedDomainsCache, reversedConstraintsCache)
+	return matchDomainConstraint(host, constraint)
 }
 
 func matchIPConstraint(ip net.IP, constraint *net.IPNet) (bool, error) {
@@ -491,21 +490,16 @@ func matchIPConstraint(ip net.IP, constraint *net.IPNet) (bool, error) {
 	return true, nil
 }
 
-func matchDomainConstraint(domain, constraint string, reversedDomainsCache map[string][]string, reversedConstraintsCache map[string][]string) (bool, error) {
+func matchDomainConstraint(domain, constraint string) (bool, error) {
 	// The meaning of zero length constraints is not specified, but this
 	// code follows NSS and accepts them as matching everything.
 	if len(constraint) == 0 {
 		return true, nil
 	}
 
-	domainLabels, found := reversedDomainsCache[domain]
-	if !found {
-		var ok bool
-		domainLabels, ok = domainToReverseLabels(domain)
-		if !ok {
-			return false, fmt.Errorf("x509: internal error: cannot parse domain %q", domain)
-		}
-		reversedDomainsCache[domain] = domainLabels
+	domainLabels, ok := domainToReverseLabels(domain)
+	if !ok {
+		return false, fmt.Errorf("x509: internal error: cannot parse domain %q", domain)
 	}
 
 	// RFC 5280 says that a leading period in a domain name means that at
@@ -519,14 +513,9 @@ func matchDomainConstraint(domain, constraint string, reversedDomainsCache map[s
 		constraint = constraint[1:]
 	}
 
-	constraintLabels, found := reversedConstraintsCache[constraint]
-	if !found {
-		var ok bool
-		constraintLabels, ok = domainToReverseLabels(constraint)
-		if !ok {
-			return false, fmt.Errorf("x509: internal error: cannot parse domain %q", constraint)
-		}
-		reversedConstraintsCache[constraint] = constraintLabels
+	constraintLabels, ok := domainToReverseLabels(constraint)
+	if !ok {
+		return false, fmt.Errorf("x509: internal error: cannot parse domain %q", constraint)
 	}
 
 	if len(domainLabels) < len(constraintLabels) ||
@@ -647,19 +636,6 @@ func (c *Certificate) isValid(certType int, currentChain []*Certificate, opts *V
 		}
 	}
 
-	// Each time we do constraint checking, we need to check the constraints in
-	// the current certificate against all of the names that preceded it. We
-	// reverse these names using domainToReverseLabels, which is a relatively
-	// expensive operation. Since we check each name against each constraint,
-	// this requires us to do N*C calls to domainToReverseLabels (where N is the
-	// total number of names that preceed the certificate, and C is the total
-	// number of constraints in the certificate). By caching the results of
-	// calling domainToReverseLabels, we can reduce that to N+C calls at the
-	// cost of keeping all of the parsed names and constraints in memory until
-	// we return from isValid.
-	reversedDomainsCache := map[string][]string{}
-	reversedConstraintsCache := map[string][]string{}
-
 	if (certType == intermediateCertificate || certType == rootCertificate) &&
 		c.hasNameConstraints() {
 		toCheck := []*Certificate{}
@@ -680,20 +656,20 @@ func (c *Certificate) isValid(certType int, currentChain []*Certificate, opts *V
 
 					if err := c.checkNameConstraints(&comparisonCount, maxConstraintComparisons, "email address", name, mailbox,
 						func(parsedName, constraint any) (bool, error) {
-							return matchEmailConstraint(parsedName.(rfc2821Mailbox), constraint.(string), reversedDomainsCache, reversedConstraintsCache)
+							return matchEmailConstraint(parsedName.(rfc2821Mailbox), constraint.(string))
 						}, c.PermittedEmailAddresses, c.ExcludedEmailAddresses); err != nil {
 						return err
 					}
 
 				case nameTypeDNS:
 					name := string(data)
-					if !domainNameValid(name, false) {
+					if _, ok := domainToReverseLabels(name); !ok {
 						return fmt.Errorf("x509: cannot parse dnsName %q", name)
 					}
 
 					if err := c.checkNameConstraints(&comparisonCount, maxConstraintComparisons, "DNS name", name, name,
 						func(parsedName, constraint any) (bool, error) {
-							return matchDomainConstraint(parsedName.(string), constraint.(string), reversedDomainsCache, reversedConstraintsCache)
+							return matchDomainConstraint(parsedName.(string), constraint.(string))
 						}, c.PermittedDNSDomains, c.ExcludedDNSDomains); err != nil {
 						return err
 					}
@@ -707,7 +683,7 @@ func (c *Certificate) isValid(certType int, currentChain []*Certificate, opts *V
 
 					if err := c.checkNameConstraints(&comparisonCount, maxConstraintComparisons, "URI", name, uri,
 						func(parsedName, constraint any) (bool, error) {
-							return matchURIConstraint(parsedName.(*url.URL), constraint.(string), reversedDomainsCache, reversedConstraintsCache)
+							return matchURIConstraint(parsedName.(*url.URL), constraint.(string))
 						}, c.PermittedURIDomains, c.ExcludedURIDomains); err != nil {
 						return err
 					}
@@ -865,45 +841,31 @@ func (c *Certificate) Verify(opts VerifyOptions) (chains [][]*Certificate, err e
 		}
 	}
 
-	chains = make([][]*Certificate, 0, len(candidateChains))
-
-	var invalidPoliciesChains int
-	for _, candidate := range candidateChains {
-		if !policiesValid(candidate, opts) {
-			invalidPoliciesChains++
-			continue
-		}
-		chains = append(chains, candidate)
-	}
-
-	if len(chains) == 0 {
-		return nil, CertificateInvalidError{c, NoValidChains, "all candidate chains have invalid policies"}
+	if len(opts.KeyUsages) == 0 {
+		opts.KeyUsages = []ExtKeyUsage{ExtKeyUsageServerAuth}
 	}
 
 	for _, eku := range opts.KeyUsages {
 		if eku == ExtKeyUsageAny {
 			// If any key usage is acceptable, no need to check the chain for
 			// key usages.
-			return chains, nil
+			return candidateChains, nil
 		}
 	}
 
-	if len(opts.KeyUsages) == 0 {
-		opts.KeyUsages = []ExtKeyUsage{ExtKeyUsageServerAuth}
-	}
-
-	candidateChains = chains
-	chains = chains[:0]
-
-	var incompatibleKeyUsageChains int
+	chains = make([][]*Certificate, 0, len(candidateChains))
+	var incompatibleKeyUsageChains, invalidPoliciesChains int
 	for _, candidate := range candidateChains {
 		if !checkChainForKeyUsage(candidate, opts.KeyUsages) {
 			incompatibleKeyUsageChains++
 			continue
 		}
+		if !policiesValid(candidate, opts) {
+			invalidPoliciesChains++
+			continue
+		}
 		chains = append(chains, candidate)
 	}
-
 	if len(chains) == 0 {
 		var details []string
 		if incompatibleKeyUsageChains > 0 {
@@ -951,10 +913,7 @@ func alreadyInChain(candidate *Certificate, chain []*Certificate) bool {
 		if !bytes.Equal(candidate.RawSubject, cert.RawSubject) {
 			continue
 		}
-		// We enforce the canonical encoding of SPKI (by only allowing the
-		// correct AI paremeter encodings in parseCertificate), so it's safe to
-		// directly compare the raw bytes.
-		if !bytes.Equal(candidate.RawSubjectPublicKeyInfo, cert.RawSubjectPublicKeyInfo) {
+		if !candidate.PublicKey.(pubKeyEqual).Equal(cert.PublicKey) {
 			continue
 		}
 		var certSAN *pkix.Extension

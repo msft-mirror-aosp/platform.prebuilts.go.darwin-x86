@@ -491,14 +491,17 @@ func findDeclsAndUnresolved(body ast.Node, topDecls map[*ast.Object]ast.Decl, ty
 }
 
 func hasIota(s ast.Spec) bool {
-	for n := range ast.Preorder(s) {
+	has := false
+	ast.Inspect(s, func(n ast.Node) bool {
 		// Check that this is the special built-in "iota" identifier, not
 		// a user-defined shadow.
 		if id, ok := n.(*ast.Ident); ok && id.Name == "iota" && id.Obj == nil {
-			return true
+			has = true
+			return false
 		}
-	}
-	return false
+		return true
+	})
+	return has
 }
 
 // findImportGroupStarts finds the start positions of each sequence of import

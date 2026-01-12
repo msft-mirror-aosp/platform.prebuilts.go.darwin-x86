@@ -42,7 +42,7 @@ var (
 type Interface struct {
 	Index        int          // positive integer that starts at one, zero is never used
 	MTU          int          // maximum transmission unit
-	Name         string       // e.g., "en0", "lo0", "eth0.100"; may be the empty string
+	Name         string       // e.g., "en0", "lo0", "eth0.100"
 	HardwareAddr HardwareAddr // IEEE MAC-48, EUI-48 and EUI-64 form
 	Flags        Flags        // e.g., FlagUp, FlagLoopback, FlagMulticast
 }
@@ -221,11 +221,9 @@ func (zc *ipv6ZoneCache) update(ift []Interface, force bool) (updated bool) {
 	zc.toIndex = make(map[string]int, len(ift))
 	zc.toName = make(map[int]string, len(ift))
 	for _, ifi := range ift {
-		if ifi.Name != "" {
-			zc.toIndex[ifi.Name] = ifi.Index
-			if _, ok := zc.toName[ifi.Index]; !ok {
-				zc.toName[ifi.Index] = ifi.Name
-			}
+		zc.toIndex[ifi.Name] = ifi.Index
+		if _, ok := zc.toName[ifi.Index]; !ok {
+			zc.toName[ifi.Index] = ifi.Name
 		}
 	}
 	return true

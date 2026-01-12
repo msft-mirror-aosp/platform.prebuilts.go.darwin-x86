@@ -37,7 +37,7 @@ func IsStandardPackage(goroot, compiler, path string) bool {
 	}
 }
 
-// gccgoDirs holds the gccgo search directories.
+// gccgoSearch holds the gccgo search directories.
 type gccgoDirs struct {
 	once sync.Once
 	dirs []string

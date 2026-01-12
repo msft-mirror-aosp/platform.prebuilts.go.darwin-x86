@@ -359,7 +359,7 @@ func defaultContext() Context {
 
 	env := os.Getenv("CGO_ENABLED")
 	if env == "" {
-		env = buildcfg.DefaultCGO_ENABLED
+		env = defaultCGO_ENABLED
 	}
 	switch env {
 	case "1":
@@ -1985,8 +1985,23 @@ func (ctxt *Context) matchTag(name string, allTags map[string]bool) bool {
 	}
 
 	// other tags
-	return slices.Contains(ctxt.BuildTags, name) || slices.Contains(ctxt.ToolTags, name) ||
-		slices.Contains(ctxt.ReleaseTags, name)
+	for _, tag := range ctxt.BuildTags {
+		if tag == name {
+			return true
+		}
+	}
+	for _, tag := range ctxt.ToolTags {
+		if tag == name {
+			return true
+		}
+	}
+	for _, tag := range ctxt.ReleaseTags {
+		if tag == name {
+			return true
+		}
+	}
+
+	return false
 }
 
 // goodOSArchFile returns false if the name contains a $GOOS or $GOARCH

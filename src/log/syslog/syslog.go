@@ -140,7 +140,7 @@ func Dial(network, raddr string, priority Priority, tag string) (*Writer, error)
 	if err != nil {
 		return nil, err
 	}
-	return w, nil
+	return w, err
 }
 
 // connect makes a connection to the syslog server.

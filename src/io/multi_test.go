@@ -332,7 +332,9 @@ func TestMultiReaderFreesExhaustedReaders(t *testing.T) {
 		buf1 := bytes.NewReader([]byte("foo"))
 		buf2 := bytes.NewReader([]byte("bar"))
 		mr = MultiReader(buf1, buf2)
-		runtime.AddCleanup(buf1, func(ch chan struct{}) { close(ch) }, closed)
+		runtime.SetFinalizer(buf1, func(*bytes.Reader) {
+			close(closed)
+		})
 	}()
 
 	buf := make([]byte, 4)

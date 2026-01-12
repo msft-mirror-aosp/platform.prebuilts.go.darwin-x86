@@ -66,7 +66,6 @@ var (
 	crlf       = []byte("\r\n")
 	lf         = []byte("\n")
 	softSuffix = []byte("=")
-	lwspChar   = " \t"
 )
 
 // Read reads and decodes quoted-printable data from the underlying reader.
@@ -93,7 +92,7 @@ func (r *Reader) Read(p []byte) (n int, err error) {
 			wholeLine := r.line
 			r.line = bytes.TrimRightFunc(wholeLine, isQPDiscardWhitespace)
 			if bytes.HasSuffix(r.line, softSuffix) {
-				rightStripped := bytes.TrimLeft(wholeLine[len(r.line):], lwspChar)
+				rightStripped := wholeLine[len(r.line):]
 				r.line = r.line[:len(r.line)-1]
 				if !bytes.HasPrefix(rightStripped, lf) && !bytes.HasPrefix(rightStripped, crlf) &&
 					!(len(rightStripped) == 0 && len(r.line) > 0 && r.rerr == io.EOF) {

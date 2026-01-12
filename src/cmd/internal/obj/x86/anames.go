@@ -210,7 +210,6 @@ var Anames = []string{
 	"DPPD",
 	"DPPS",
 	"EMMS",
-	"ENDBR64",
 	"ENTER",
 	"EXTRACTPS",
 	"F2XM1",

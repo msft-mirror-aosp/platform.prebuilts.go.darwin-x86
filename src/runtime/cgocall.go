@@ -355,9 +355,7 @@ func cgocallbackg(fn, frame unsafe.Pointer, ctxt uintptr) {
 	gp.m.incgo = true
 	unlockOSThread()
 
-	if gp.m.isextra && gp.m.ncgo == 0 {
-		// There are no active cgocalls above this frame (ncgo == 0),
-		// thus there can't be more Go frames above this frame.
+	if gp.m.isextra {
 		gp.m.isExtraInC = true
 	}
 

@@ -263,7 +263,10 @@ func DecodeLastRune(p []byte) (r rune, size int) {
 	// guard against O(n^2) behavior when traversing
 	// backwards through strings with long sequences of
 	// invalid UTF-8.
-	lim := max(end-UTFMax, 0)
+	lim := end - UTFMax
+	if lim < 0 {
+		lim = 0
+	}
 	for start--; start >= lim; start-- {
 		if RuneStart(p[start]) {
 			break
@@ -300,7 +303,10 @@ func DecodeLastRuneInString(s string) (r rune, size int) {
 	// guard against O(n^2) behavior when traversing
 	// backwards through strings with long sequences of
 	// invalid UTF-8.
-	lim := max(end-UTFMax, 0)
+	lim := end - UTFMax
+	if lim < 0 {
+		lim = 0
+	}
 	for start--; start >= lim; start-- {
 		if RuneStart(s[start]) {
 			break

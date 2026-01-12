@@ -13,10 +13,9 @@ import (
 	"io"
 	"slices"
 	"strings"
-	"time"
 
-	"internal/trace/tracev2"
-	"internal/trace/version"
+	"internal/trace/event"
+	"internal/trace/event/go122"
 )
 
 // generation contains all the trace data for a single
@@ -28,7 +27,6 @@ type generation struct {
 	batches    map[ThreadID][]batch
 	batchMs    []ThreadID
 	cpuSamples []cpuSample
-	minTs      timestamp
 	*evTable
 }
 
@@ -47,7 +45,7 @@ type spilledBatch struct {
 //
 // If gen is non-nil, it is valid and must be processed before handling the returned
 // error.
-func readGeneration(r *bufio.Reader, spill *spilledBatch, ver version.Version) (*generation, *spilledBatch, error) {
+func readGeneration(r *bufio.Reader, spill *spilledBatch) (*generation, *spilledBatch, error) {
 	g := &generation{
 		evTable: &evTable{
 			pcs: make(map[uint64]frame),
@@ -57,8 +55,7 @@ func readGeneration(r *bufio.Reader, spill *spilledBatch, ver version.Version) (
 	// Process the spilled batch.
 	if spill != nil {
 		g.gen = spill.gen
-		g.minTs = spill.batch.time
-		if err := processBatch(g, *spill.batch, ver); err != nil {
+		if err := processBatch(g, *spill.batch); err != nil {
 			return nil, nil, err
 		}
 		spill = nil
@@ -103,10 +100,7 @@ func readGeneration(r *bufio.Reader, spill *spilledBatch, ver version.Version) (
 			// problem as soon as we see it.
 			return nil, nil, fmt.Errorf("generations out of order")
 		}
-		if g.minTs == 0 || b.time < g.minTs {
-			g.minTs = b.time
-		}
-		if err := processBatch(g, b, ver); err != nil {
+		if err := processBatch(g, b); err != nil {
 			return nil, nil, err
 		}
 	}
@@ -115,10 +109,6 @@ func readGeneration(r *bufio.Reader, spill *spilledBatch, ver version.Version) (
 	if g.freq == 0 {
 		return nil, nil, fmt.Errorf("no frequency event found")
 	}
-	if ver >= version.Go125 && !g.hasClockSnapshot {
-		return nil, nil, fmt.Errorf("no clock snapshot event found")
-	}
-
 	// N.B. Trust that the batch order is correct. We can't validate the batch order
 	// by timestamp because the timestamps could just be plain wrong. The source of
 	// truth is the order things appear in the trace and the partial order sequence
@@ -147,7 +137,7 @@ func readGeneration(r *bufio.Reader, spill *spilledBatch, ver version.Version) (
 }
 
 // processBatch adds the batch to the generation.
-func processBatch(g *generation, b batch, ver version.Version) error {
+func processBatch(g *generation, b batch) error {
 	switch {
 	case b.isStringsBatch():
 		if err := addStrings(&g.strings, b); err != nil {
@@ -163,15 +153,20 @@ func processBatch(g *generation, b batch, ver version.Version) error {
 			return err
 		}
 		g.cpuSamples = samples
-	case b.isSyncBatch(ver):
-		if err := setSyncBatch(&g.sync, b, ver); err != nil {
+	case b.isFreqBatch():
+		freq, err := parseFreq(b)
+		if err != nil {
 			return err
 		}
-	case b.exp != tracev2.NoExperiment:
-		if g.expBatches == nil {
-			g.expBatches = make(map[tracev2.Experiment][]ExperimentalBatch)
+		if g.freq != 0 {
+			return fmt.Errorf("found multiple frequency events")
 		}
-		if err := addExperimentalBatch(g.expBatches, b); err != nil {
+		g.freq = freq
+	case b.exp != event.NoExperiment:
+		if g.expData == nil {
+			g.expData = make(map[event.Experiment]*ExperimentalData)
+		}
+		if err := addExperimentalData(g.expData, b); err != nil {
 			return err
 		}
 	default:
@@ -223,7 +218,7 @@ func addStrings(stringTable *dataTable[stringID, string], b batch) error {
 	}
 	r := bytes.NewReader(b.data)
 	hdr, err := r.ReadByte() // Consume the EvStrings byte.
-	if err != nil || tracev2.EventType(hdr) != tracev2.EvStrings {
+	if err != nil || event.Type(hdr) != go122.EvStrings {
 		return fmt.Errorf("missing strings batch header")
 	}
 
@@ -234,7 +229,7 @@ func addStrings(stringTable *dataTable[stringID, string], b batch) error {
 		if err != nil {
 			return err
 		}
-		if tracev2.EventType(ev) != tracev2.EvString {
+		if event.Type(ev) != go122.EvString {
 			return fmt.Errorf("expected string event, got %d", ev)
 		}
 
@@ -249,8 +244,8 @@ func addStrings(stringTable *dataTable[stringID, string], b batch) error {
 		if err != nil {
 			return err
 		}
-		if len > tracev2.MaxEventTrailerDataSize {
-			return fmt.Errorf("invalid string size %d, maximum is %d", len, tracev2.MaxEventTrailerDataSize)
+		if len > go122.MaxStringSize {
+			return fmt.Errorf("invalid string size %d, maximum is %d", len, go122.MaxStringSize)
 		}
 
 		// Copy out the string.
@@ -281,7 +276,7 @@ func addStacks(stackTable *dataTable[stackID, stack], pcs map[uint64]frame, b ba
 	}
 	r := bytes.NewReader(b.data)
 	hdr, err := r.ReadByte() // Consume the EvStacks byte.
-	if err != nil || tracev2.EventType(hdr) != tracev2.EvStacks {
+	if err != nil || event.Type(hdr) != go122.EvStacks {
 		return fmt.Errorf("missing stacks batch header")
 	}
 
@@ -291,7 +286,7 @@ func addStacks(stackTable *dataTable[stackID, stack], pcs map[uint64]frame, b ba
 		if err != nil {
 			return err
 		}
-		if tracev2.EventType(ev) != tracev2.EvStack {
+		if event.Type(ev) != go122.EvStack {
 			return fmt.Errorf("expected stack event, got %d", ev)
 		}
 
@@ -306,8 +301,8 @@ func addStacks(stackTable *dataTable[stackID, stack], pcs map[uint64]frame, b ba
 		if err != nil {
 			return err
 		}
-		if nFrames > tracev2.MaxFramesPerStack {
-			return fmt.Errorf("invalid stack size %d, maximum is %d", nFrames, tracev2.MaxFramesPerStack)
+		if nFrames > go122.MaxFramesPerStack {
+			return fmt.Errorf("invalid stack size %d, maximum is %d", nFrames, go122.MaxFramesPerStack)
 		}
 
 		// Each frame consists of 4 fields: pc, funcID (string), fileID (string), line.
@@ -359,7 +354,7 @@ func addCPUSamples(samples []cpuSample, b batch) ([]cpuSample, error) {
 	}
 	r := bytes.NewReader(b.data)
 	hdr, err := r.ReadByte() // Consume the EvCPUSamples byte.
-	if err != nil || tracev2.EventType(hdr) != tracev2.EvCPUSamples {
+	if err != nil || event.Type(hdr) != go122.EvCPUSamples {
 		return nil, fmt.Errorf("missing CPU samples batch header")
 	}
 
@@ -369,7 +364,7 @@ func addCPUSamples(samples []cpuSample, b batch) ([]cpuSample, error) {
 		if err != nil {
 			return nil, err
 		}
-		if tracev2.EventType(ev) != tracev2.EvCPUSample {
+		if event.Type(ev) != go122.EvCPUSample {
 			return nil, fmt.Errorf("expected CPU sample event, got %d", ev)
 		}
 
@@ -423,90 +418,35 @@ func addCPUSamples(samples []cpuSample, b batch) ([]cpuSample, error) {
 	return samples, nil
 }
 
-// sync holds the per-generation sync data.
-type sync struct {
-	freq             frequency
-	hasClockSnapshot bool
-	snapTime         timestamp
-	snapMono         uint64
-	snapWall         time.Time
-}
-
-func setSyncBatch(s *sync, b batch, ver version.Version) error {
-	if !b.isSyncBatch(ver) {
-		return fmt.Errorf("internal error: setSyncBatch called on non-sync batch")
+// parseFreq parses out a lone EvFrequency from a batch.
+func parseFreq(b batch) (frequency, error) {
+	if !b.isFreqBatch() {
+		return 0, fmt.Errorf("internal error: parseFreq called on non-frequency batch")
 	}
 	r := bytes.NewReader(b.data)
-	if ver >= version.Go125 {
-		hdr, err := r.ReadByte() // Consume the EvSync byte.
-		if err != nil || tracev2.EventType(hdr) != tracev2.EvSync {
-			return fmt.Errorf("missing sync batch header")
-		}
-	}
+	r.ReadByte() // Consume the EvFrequency byte.
 
-	lastTs := b.time
-	for r.Len() != 0 {
-		// Read the header
-		ev, err := r.ReadByte()
-		if err != nil {
-			return err
-		}
-		et := tracev2.EventType(ev)
-		switch {
-		case et == tracev2.EvFrequency:
-			if s.freq != 0 {
-				return fmt.Errorf("found multiple frequency events")
-			}
-			// Read the frequency. It'll come out as timestamp units per second.
-			f, err := binary.ReadUvarint(r)
-			if err != nil {
-				return err
-			}
-			// Convert to nanoseconds per timestamp unit.
-			s.freq = frequency(1.0 / (float64(f) / 1e9))
-		case et == tracev2.EvClockSnapshot && ver >= version.Go125:
-			if s.hasClockSnapshot {
-				return fmt.Errorf("found multiple clock snapshot events")
-			}
-			s.hasClockSnapshot = true
-			// Read the EvClockSnapshot arguments.
-			tdiff, err := binary.ReadUvarint(r)
-			if err != nil {
-				return err
-			}
-			lastTs += timestamp(tdiff)
-			s.snapTime = lastTs
-			mono, err := binary.ReadUvarint(r)
-			if err != nil {
-				return err
-			}
-			s.snapMono = mono
-			sec, err := binary.ReadUvarint(r)
-			if err != nil {
-				return err
-			}
-			nsec, err := binary.ReadUvarint(r)
-			if err != nil {
-				return err
-			}
-			// TODO(felixge): In theory we could inject s.snapMono into the time
-			// value below to make it comparable. But there is no API for this
-			// in the time package right now.
-			s.snapWall = time.Unix(int64(sec), int64(nsec))
-		default:
-			return fmt.Errorf("expected frequency or clock snapshot event, got %d", ev)
-		}
+	// Read the frequency. It'll come out as timestamp units per second.
+	f, err := binary.ReadUvarint(r)
+	if err != nil {
+		return 0, err
 	}
-	return nil
+	// Convert to nanoseconds per timestamp unit.
+	return frequency(1.0 / (float64(f) / 1e9)), nil
 }
 
-// addExperimentalBatch takes an experimental batch and adds it to the list of experimental
-// batches for the experiment its a part of.
-func addExperimentalBatch(expBatches map[tracev2.Experiment][]ExperimentalBatch, b batch) error {
-	if b.exp == tracev2.NoExperiment {
-		return fmt.Errorf("internal error: addExperimentalBatch called on non-experimental batch")
+// addExperimentalData takes an experimental batch and adds it to the ExperimentalData
+// for the experiment its a part of.
+func addExperimentalData(expData map[event.Experiment]*ExperimentalData, b batch) error {
+	if b.exp == event.NoExperiment {
+		return fmt.Errorf("internal error: addExperimentalData called on non-experimental batch")
 	}
-	expBatches[b.exp] = append(expBatches[b.exp], ExperimentalBatch{
+	ed, ok := expData[b.exp]
+	if !ok {
+		ed = new(ExperimentalData)
+		expData[b.exp] = ed
+	}
+	ed.Batches = append(ed.Batches, ExperimentalBatch{
 		Thread: b.m,
 		Data:   b.data,
 	})

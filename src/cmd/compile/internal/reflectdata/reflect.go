@@ -592,21 +592,11 @@ func TypePtrAt(pos src.XPos, t *types.Type) *ir.AddrExpr {
 // it may sometimes, but not always, be a type that can't implement the specified
 // interface.
 func ITabLsym(typ, iface *types.Type) *obj.LSym {
-	return itabLsym(typ, iface, true)
-}
-
-func itabLsym(typ, iface *types.Type, allowNonImplement bool) *obj.LSym {
 	s, existed := ir.Pkgs.Itab.LookupOK(typ.LinkString() + "," + iface.LinkString())
 	lsym := s.Linksym()
-	signatmu.Lock()
-	if lsym.Extra == nil {
-		ii := lsym.NewItabInfo()
-		ii.Type = typ
-	}
-	signatmu.Unlock()
 
 	if !existed {
-		writeITab(lsym, typ, iface, allowNonImplement)
+		writeITab(lsym, typ, iface, true)
 	}
 	return lsym
 }
@@ -615,7 +605,13 @@ func itabLsym(typ, iface *types.Type, allowNonImplement bool) *obj.LSym {
 // *runtime.itab value for concrete type typ implementing interface
 // iface.
 func ITabAddrAt(pos src.XPos, typ, iface *types.Type) *ir.AddrExpr {
-	lsym := itabLsym(typ, iface, false)
+	s, existed := ir.Pkgs.Itab.LookupOK(typ.LinkString() + "," + iface.LinkString())
+	lsym := s.Linksym()
+
+	if !existed {
+		writeITab(lsym, typ, iface, false)
+	}
+
 	return typecheck.LinksymAddr(pos, lsym, types.Types[types.TUINT8])
 }
 
@@ -1284,7 +1280,9 @@ func dgcptrmask(t *types.Type, write bool) *obj.LSym {
 // word offsets in t that hold pointers.
 // ptrmask is assumed to fit at least types.PtrDataSize(t)/PtrSize bits.
 func fillptrmask(t *types.Type, ptrmask []byte) {
-	clear(ptrmask)
+	for i := range ptrmask {
+		ptrmask[i] = 0
+	}
 	if !t.HasPointers() {
 		return
 	}

@@ -11,7 +11,6 @@ package cgotest
 
 /*
 #include <stdint.h>
-#include <stdlib.h>
 #include <dlfcn.h>
 #cgo linux LDFLAGS: -ldl
 
@@ -25,7 +24,6 @@ import "C"
 
 import (
 	"testing"
-	"unsafe"
 )
 
 var callbacks int
@@ -68,9 +66,7 @@ func loadThySelf(t *testing.T, symbol string) {
 	}
 	defer C.dlclose4029(this_process)
 
-	symCStr := C.CString(symbol)
-	defer C.free(unsafe.Pointer(symCStr))
-	symbol_address := C.dlsym4029(this_process, symCStr)
+	symbol_address := C.dlsym4029(this_process, C.CString(symbol))
 	if symbol_address == 0 {
 		t.Error("dlsym:", C.GoString(C.dlerror()))
 		return

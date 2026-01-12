@@ -39,13 +39,24 @@ type Cache struct {
 
 func (c *Cache) Reset() {
 	nv := sort.Search(len(c.values), func(i int) bool { return c.values[i].ID == 0 })
-	clear(c.values[:nv])
+	xv := c.values[:nv]
+	for i := range xv {
+		xv[i] = Value{}
+	}
 	nb := sort.Search(len(c.blocks), func(i int) bool { return c.blocks[i].ID == 0 })
-	clear(c.blocks[:nb])
+	xb := c.blocks[:nb]
+	for i := range xb {
+		xb[i] = Block{}
+	}
 	nl := sort.Search(len(c.locs), func(i int) bool { return c.locs[i] == nil })
-	clear(c.locs[:nl])
+	xl := c.locs[:nl]
+	for i := range xl {
+		xl[i] = nil
+	}
 
 	// regalloc sets the length of c.regallocValues to whatever it may use,
 	// so clear according to length.
-	clear(c.regallocValues)
+	for i := range c.regallocValues {
+		c.regallocValues[i] = valState{}
+	}
 }

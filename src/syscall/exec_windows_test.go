@@ -6,7 +6,6 @@ package syscall_test
 
 import (
 	"fmt"
-	"internal/testenv"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -74,7 +73,7 @@ func TestChangingProcessParent(t *testing.T) {
 
 	// run parent process
 
-	parent := exec.Command(testenv.Executable(t), "-test.run=^TestChangingProcessParent$")
+	parent := exec.Command(os.Args[0], "-test.run=^TestChangingProcessParent$")
 	parent.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=parent")
 	err := parent.Start()
 	if err != nil {
@@ -97,7 +96,7 @@ func TestChangingProcessParent(t *testing.T) {
 	}
 	defer syscall.CloseHandle(ph)
 
-	child := exec.Command(testenv.Executable(t), "-test.run=^TestChangingProcessParent$")
+	child := exec.Command(os.Args[0], "-test.run=^TestChangingProcessParent$")
 	child.Env = append(os.Environ(),
 		"GO_WANT_HELPER_PROCESS=child",
 		"GO_WANT_HELPER_PROCESS_FILE="+childDumpPath)

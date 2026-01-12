@@ -17,6 +17,9 @@ import (
 
 // Functions below pushed from runtime.
 
+//go:linkname mapKeyError
+func mapKeyError(typ *abi.SwissMapType, p unsafe.Pointer) error
+
 // Pushed from runtime in order to use runtime.plainError
 //
 //go:linkname errNilAssign

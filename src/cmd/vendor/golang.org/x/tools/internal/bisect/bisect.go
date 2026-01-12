@@ -320,7 +320,7 @@ func AppendMarker(dst []byte, id uint64) []byte {
 	const prefix = "[bisect-match 0x"
 	var buf [len(prefix) + 16 + 1]byte
 	copy(buf[:], prefix)
-	for i := range 16 {
+	for i := 0; i < 16; i++ {
 		buf[len(prefix)+i] = "0123456789abcdef"[id>>60]
 		id <<= 4
 	}
@@ -504,7 +504,7 @@ func fnvString(h uint64, x string) uint64 {
 }
 
 func fnvUint64(h uint64, x uint64) uint64 {
-	for range 8 {
+	for i := 0; i < 8; i++ {
 		h ^= uint64(x & 0xFF)
 		x >>= 8
 		h *= prime64
@@ -513,7 +513,7 @@ func fnvUint64(h uint64, x uint64) uint64 {
 }
 
 func fnvUint32(h uint64, x uint32) uint64 {
-	for range 4 {
+	for i := 0; i < 4; i++ {
 		h ^= uint64(x & 0xFF)
 		x >>= 8
 		h *= prime64

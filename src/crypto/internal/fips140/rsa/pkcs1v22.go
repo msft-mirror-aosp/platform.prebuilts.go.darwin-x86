@@ -16,7 +16,6 @@ import (
 	"crypto/internal/fips140/sha512"
 	"crypto/internal/fips140/subtle"
 	"errors"
-	"hash"
 	"io"
 )
 
@@ -49,7 +48,7 @@ func incCounter(c *[4]byte) {
 
 // mgf1XOR XORs the bytes in out with a mask generated using the MGF1 function
 // specified in PKCS #1 v2.1.
-func mgf1XOR(out []byte, hash hash.Hash, seed []byte) {
+func mgf1XOR(out []byte, hash fips140.Hash, seed []byte) {
 	var counter [4]byte
 	var digest []byte
 
@@ -68,7 +67,7 @@ func mgf1XOR(out []byte, hash hash.Hash, seed []byte) {
 	}
 }
 
-func emsaPSSEncode(mHash []byte, emBits int, salt []byte, hash hash.Hash) ([]byte, error) {
+func emsaPSSEncode(mHash []byte, emBits int, salt []byte, hash fips140.Hash) ([]byte, error) {
 	// See RFC 8017, Section 9.1.1.
 
 	hLen := hash.Size()
@@ -145,7 +144,7 @@ func emsaPSSEncode(mHash []byte, emBits int, salt []byte, hash hash.Hash) ([]byt
 
 const pssSaltLengthAutodetect = -1
 
-func emsaPSSVerify(mHash, em []byte, emBits, sLen int, hash hash.Hash) error {
+func emsaPSSVerify(mHash, em []byte, emBits, sLen int, hash fips140.Hash) error {
 	// See RFC 8017, Section 9.1.2.
 
 	hLen := hash.Size()
@@ -243,7 +242,7 @@ func emsaPSSVerify(mHash, em []byte, emBits, sLen int, hash hash.Hash) error {
 	h0 := hash.Sum(nil)
 
 	// 14. If H = H', output "consistent." Otherwise, output "inconsistent."
-	if !bytes.Equal(h0, h) {
+	if !bytes.Equal(h0, h) { // TODO: constant time?
 		return ErrVerification
 	}
 	return nil
@@ -251,7 +250,7 @@ func emsaPSSVerify(mHash, em []byte, emBits, sLen int, hash hash.Hash) error {
 
 // PSSMaxSaltLength returns the maximum salt length for a given public key and
 // hash function.
-func PSSMaxSaltLength(pub *PublicKey, hash hash.Hash) (int, error) {
+func PSSMaxSaltLength(pub *PublicKey, hash fips140.Hash) (int, error) {
 	saltLength := (pub.N.BitLen()-1+7)/8 - 2 - hash.Size()
 	if saltLength < 0 {
 		return 0, ErrMessageTooLong
@@ -265,7 +264,7 @@ func PSSMaxSaltLength(pub *PublicKey, hash hash.Hash) (int, error) {
 }
 
 // SignPSS calculates the signature of hashed using RSASSA-PSS.
-func SignPSS(rand io.Reader, priv *PrivateKey, hash hash.Hash, hashed []byte, saltLength int) ([]byte, error) {
+func SignPSS(rand io.Reader, priv *PrivateKey, hash fips140.Hash, hashed []byte, saltLength int) ([]byte, error) {
 	fipsSelfTest()
 	fips140.RecordApproved()
 	checkApprovedHash(hash)
@@ -312,19 +311,19 @@ func SignPSS(rand io.Reader, priv *PrivateKey, hash hash.Hash, hashed []byte, sa
 }
 
 // VerifyPSS verifies sig with RSASSA-PSS automatically detecting the salt length.
-func VerifyPSS(pub *PublicKey, hash hash.Hash, digest []byte, sig []byte) error {
+func VerifyPSS(pub *PublicKey, hash fips140.Hash, digest []byte, sig []byte) error {
 	return verifyPSS(pub, hash, digest, sig, pssSaltLengthAutodetect)
 }
 
 // VerifyPSS verifies sig with RSASSA-PSS and an expected salt length.
-func VerifyPSSWithSaltLength(pub *PublicKey, hash hash.Hash, digest []byte, sig []byte, saltLength int) error {
+func VerifyPSSWithSaltLength(pub *PublicKey, hash fips140.Hash, digest []byte, sig []byte, saltLength int) error {
 	if saltLength < 0 {
 		return errors.New("crypto/rsa: salt length cannot be negative")
 	}
 	return verifyPSS(pub, hash, digest, sig, saltLength)
 }
 
-func verifyPSS(pub *PublicKey, hash hash.Hash, digest []byte, sig []byte, saltLength int) error {
+func verifyPSS(pub *PublicKey, hash fips140.Hash, digest []byte, sig []byte, saltLength int) error {
 	fipsSelfTest()
 	fips140.RecordApproved()
 	checkApprovedHash(hash)
@@ -360,7 +359,7 @@ func verifyPSS(pub *PublicKey, hash hash.Hash, digest []byte, sig []byte, saltLe
 	return emsaPSSVerify(digest, em, emBits, saltLength, hash)
 }
 
-func checkApprovedHash(hash hash.Hash) {
+func checkApprovedHash(hash fips140.Hash) {
 	switch hash.(type) {
 	case *sha256.Digest, *sha512.Digest, *sha3.Digest:
 	default:
@@ -369,7 +368,7 @@ func checkApprovedHash(hash hash.Hash) {
 }
 
 // EncryptOAEP encrypts the given message with RSAES-OAEP.
-func EncryptOAEP(hash, mgfHash hash.Hash, random io.Reader, pub *PublicKey, msg []byte, label []byte) ([]byte, error) {
+func EncryptOAEP(hash, mgfHash fips140.Hash, random io.Reader, pub *PublicKey, msg []byte, label []byte) ([]byte, error) {
 	// Note that while we don't commit to deterministic execution with respect
 	// to the random stream, we also don't apply MaybeReadByte, so per Hyrum's
 	// Law it's probably relied upon by some. It's a tolerable promise because a
@@ -412,7 +411,7 @@ func EncryptOAEP(hash, mgfHash hash.Hash, random io.Reader, pub *PublicKey, msg 
 }
 
 // DecryptOAEP decrypts ciphertext using RSAES-OAEP.
-func DecryptOAEP(hash, mgfHash hash.Hash, priv *PrivateKey, ciphertext []byte, label []byte) ([]byte, error) {
+func DecryptOAEP(hash, mgfHash fips140.Hash, priv *PrivateKey, ciphertext []byte, label []byte) ([]byte, error) {
 	fipsSelfTest()
 	fips140.RecordApproved()
 	checkApprovedHash(hash)

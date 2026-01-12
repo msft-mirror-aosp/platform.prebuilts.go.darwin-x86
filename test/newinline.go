@@ -280,13 +280,13 @@ func ff(x int) { // ERROR "can inline ff"
 	if x < 0 {
 		return
 	}
-	gg(x - 1) // ERROR "inlining call to gg" "inlining call to hh" "inlining call to ff"
+	gg(x - 1) // ERROR "inlining call to gg" "inlining call to hh"
 }
 func gg(x int) { // ERROR "can inline gg"
-	hh(x - 1) // ERROR "inlining call to hh" "inlining call to ff" "inlining call to gg"
+	hh(x - 1) // ERROR "inlining call to hh" "inlining call to ff"
 }
 func hh(x int) { // ERROR "can inline hh"
-	ff(x - 1) // ERROR "inlining call to ff" "inlining call to gg" "inlining call to hh"
+	ff(x - 1) // ERROR "inlining call to ff" "inlining call to gg"
 }
 
 // Issue #14768 - make sure we can inline for loops.

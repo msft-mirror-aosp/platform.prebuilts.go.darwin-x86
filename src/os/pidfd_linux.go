@@ -66,7 +66,6 @@ func getPidfd(sysAttr *syscall.SysProcAttr, needDup bool) (uintptr, bool) {
 	return uintptr(h), true
 }
 
-// pidfdFind returns the process handle for pid.
 func pidfdFind(pid int) (uintptr, error) {
 	if !pidfdWorks() {
 		return 0, syscall.ENOSYS
@@ -79,8 +78,6 @@ func pidfdFind(pid int) (uintptr, error) {
 	return h, nil
 }
 
-// pidfdWait waits for the process to complete,
-// and updates the process status to done.
 func (p *Process) pidfdWait() (*ProcessState, error) {
 	// When pidfd is used, there is no wait/kill race (described in CL 23967)
 	// because the PID recycle issue doesn't exist (IOW, pidfd, unlike PID,
@@ -111,11 +108,9 @@ func (p *Process) pidfdWait() (*ProcessState, error) {
 	if err != nil {
 		return nil, NewSyscallError("waitid", err)
 	}
-
-	// Update the Process status to statusDone.
-	// This also releases a reference to the handle.
-	p.doRelease(statusDone)
-
+	// Release the Process' handle reference, in addition to the reference
+	// we took above.
+	p.handlePersistentRelease(statusDone)
 	return &ProcessState{
 		pid:    int(info.Pid),
 		status: info.WaitStatus(),
@@ -123,7 +118,6 @@ func (p *Process) pidfdWait() (*ProcessState, error) {
 	}, nil
 }
 
-// pidfdSendSignal sends a signal to the process.
 func (p *Process) pidfdSendSignal(s syscall.Signal) error {
 	handle, status := p.handleTransientAcquire()
 	switch status {
@@ -137,12 +131,10 @@ func (p *Process) pidfdSendSignal(s syscall.Signal) error {
 	return convertESRCH(unix.PidFDSendSignal(handle, s))
 }
 
-// pidfdWorks returns whether we can use pidfd on this system.
 func pidfdWorks() bool {
 	return checkPidfdOnce() == nil
 }
 
-// checkPidfdOnce is used to only check whether pidfd works once.
 var checkPidfdOnce = sync.OnceValue(checkPidfd)
 
 // checkPidfd checks whether all required pidfd-related syscalls work. This
@@ -170,10 +162,7 @@ func checkPidfd() error {
 
 	// Check waitid(P_PIDFD) works.
 	err = ignoringEINTR(func() error {
-		var info unix.SiginfoChild
-		// We don't actually care about the info, but passing a nil pointer
-		// makes valgrind complain because 0x0 is unaddressable.
-		return unix.Waitid(unix.P_PIDFD, int(fd), &info, syscall.WEXITED, nil)
+		return unix.Waitid(unix.P_PIDFD, int(fd), nil, syscall.WEXITED, nil)
 	})
 	// Expect ECHILD from waitid since we're not our own parent.
 	if err != syscall.ECHILD {

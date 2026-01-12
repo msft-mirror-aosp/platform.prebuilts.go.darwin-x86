@@ -2,14 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package parser implements a parser for Go source files.
-//
-// The [ParseFile] function reads file input from a string, []byte, or
-// io.Reader, and produces an [ast.File] representing the complete
-// abstract syntax tree of the file.
-//
-// The [ParseExprFrom] function reads a single source-level expression and
-// produces an [ast.Expr], the syntax tree of the expression.
+// Package parser implements a parser for Go source files. Input may be
+// provided in a variety of forms (see the various Parse* functions); the
+// output is an abstract syntax tree (AST) representing the Go source. The
+// parser is invoked through one of the Parse* functions.
 //
 // The parser accepts a larger language than is syntactically permitted by
 // the Go spec, for simplicity, and for improved robustness in the presence
@@ -17,11 +13,6 @@
 // treated like an ordinary parameter list and thus may contain multiple
 // entries where the spec permits exactly one. Consequently, the corresponding
 // field in the AST (ast.FuncDecl.Recv) field is not restricted to one entry.
-//
-// Applications that need to parse one or more complete packages of Go
-// source code may find it more convenient not to interact directly
-// with the parser but instead to use the Load function in package
-// [golang.org/x/tools/go/packages].
 package parser
 
 import (
@@ -170,16 +161,11 @@ func (p *parser) next0() {
 	}
 }
 
-// lineFor returns the line of pos, ignoring line directive adjustments.
-func (p *parser) lineFor(pos token.Pos) int {
-	return p.file.PositionFor(pos, false).Line
-}
-
 // Consume a comment and return it and the line on which it ends.
 func (p *parser) consumeComment() (comment *ast.Comment, endline int) {
 	// /*-style comments may end on a different line than where they start.
 	// Scan the comment for '\n' chars and adjust endline accordingly.
-	endline = p.lineFor(p.pos)
+	endline = p.file.Line(p.pos)
 	if p.lit[1] == '*' {
 		// don't use range here - no need to decode Unicode code points
 		for i := 0; i < len(p.lit); i++ {
@@ -201,8 +187,8 @@ func (p *parser) consumeComment() (comment *ast.Comment, endline int) {
 // empty lines terminate a comment group.
 func (p *parser) consumeCommentGroup(n int) (comments *ast.CommentGroup, endline int) {
 	var list []*ast.Comment
-	endline = p.lineFor(p.pos)
-	for p.tok == token.COMMENT && p.lineFor(p.pos) <= endline+n {
+	endline = p.file.Line(p.pos)
+	for p.tok == token.COMMENT && p.file.Line(p.pos) <= endline+n {
 		var comment *ast.Comment
 		comment, endline = p.consumeComment()
 		list = append(list, comment)
@@ -239,11 +225,11 @@ func (p *parser) next() {
 		var comment *ast.CommentGroup
 		var endline int
 
-		if p.lineFor(p.pos) == p.lineFor(prev) {
+		if p.file.Line(p.pos) == p.file.Line(prev) {
 			// The comment is on same line as the previous token; it
 			// cannot be a lead comment but may be a line comment.
 			comment, endline = p.consumeCommentGroup(0)
-			if p.lineFor(p.pos) != endline || p.tok == token.SEMICOLON || p.tok == token.EOF {
+			if p.file.Line(p.pos) != endline || p.tok == token.SEMICOLON || p.tok == token.EOF {
 				// The next token is on a different line, thus
 				// the last comment group is a line comment.
 				p.lineComment = comment
@@ -256,7 +242,7 @@ func (p *parser) next() {
 			comment, endline = p.consumeCommentGroup(1)
 		}
 
-		if endline+1 == p.lineFor(p.pos) {
+		if endline+1 == p.file.Line(p.pos) {
 			// The next token is following on the line immediately after the
 			// comment group, thus the last comment group is a lead comment.
 			p.leadComment = comment
@@ -886,7 +872,7 @@ func (p *parser) parseParamDecl(name *ast.Ident, typeSetsOK bool) (f field) {
 	return
 }
 
-func (p *parser) parseParameterList(name0 *ast.Ident, typ0 ast.Expr, closing token.Token, dddok bool) (params []*ast.Field) {
+func (p *parser) parseParameterList(name0 *ast.Ident, typ0 ast.Expr, closing token.Token) (params []*ast.Field) {
 	if p.trace {
 		defer un(trace(p, "ParameterList"))
 	}
@@ -945,7 +931,7 @@ func (p *parser) parseParameterList(name0 *ast.Ident, typ0 ast.Expr, closing tok
 	// distribute parameter types (len(list) > 0)
 	if named == 0 {
 		// all unnamed => found names are type names
-		for i := range list {
+		for i := 0; i < len(list); i++ {
 			par := &list[i]
 			if typ := par.name; typ != nil {
 				par.typ = typ
@@ -973,8 +959,8 @@ func (p *parser) parseParameterList(name0 *ast.Ident, typ0 ast.Expr, closing tok
 		// some named or we're in a type parameter list => all must be named
 		var errPos token.Pos // left-most error position (or invalid)
 		var typ ast.Expr     // current type (from right to left)
-		for i := range list {
-			if par := &list[len(list)-i-1]; par.typ != nil {
+		for i := len(list) - 1; i >= 0; i-- {
+			if par := &list[i]; par.typ != nil {
 				typ = par.typ
 				if par.name == nil {
 					errPos = typ.Pos()
@@ -1020,26 +1006,6 @@ func (p *parser) parseParameterList(name0 *ast.Ident, typ0 ast.Expr, closing tok
 		}
 	}
 
-	// check use of ...
-	first := true // only report first occurrence
-	for i, _ := range list {
-		f := &list[i]
-		if t, _ := f.typ.(*ast.Ellipsis); t != nil && (!dddok || i+1 < len(list)) {
-			if first {
-				first = false
-				if dddok {
-					p.error(t.Ellipsis, "can only use ... with final parameter")
-				} else {
-					p.error(t.Ellipsis, "invalid use of ...")
-				}
-			}
-			// use T instead of invalid ...T
-			// TODO(gri) would like to use `f.typ = t.Elt` but that causes problems
-			//           with the resolver in cases of reuse of the same identifier
-			f.typ = &ast.BadExpr{From: t.Pos(), To: t.End()}
-		}
-	}
-
 	// Convert list to []*ast.Field.
 	// If list contains types only, each type gets its own ast.Field.
 	if named == 0 {
@@ -1076,42 +1042,50 @@ func (p *parser) parseParameterList(name0 *ast.Ident, typ0 ast.Expr, closing tok
 	return
 }
 
-func (p *parser) parseTypeParameters() *ast.FieldList {
-	if p.trace {
-		defer un(trace(p, "TypeParameters"))
-	}
-
-	lbrack := p.expect(token.LBRACK)
-	var list []*ast.Field
-	if p.tok != token.RBRACK {
-		list = p.parseParameterList(nil, nil, token.RBRACK, false)
-	}
-	rbrack := p.expect(token.RBRACK)
-
-	if len(list) == 0 {
-		p.error(rbrack, "empty type parameter list")
-		return nil // avoid follow-on errors
-	}
-
-	return &ast.FieldList{Opening: lbrack, List: list, Closing: rbrack}
-}
-
-func (p *parser) parseParameters(result bool) *ast.FieldList {
+func (p *parser) parseParameters(acceptTParams bool) (tparams, params *ast.FieldList) {
 	if p.trace {
 		defer un(trace(p, "Parameters"))
 	}
 
-	if !result || p.tok == token.LPAREN {
-		lparen := p.expect(token.LPAREN)
-		var list []*ast.Field
-		if p.tok != token.RPAREN {
-			list = p.parseParameterList(nil, nil, token.RPAREN, !result)
+	if acceptTParams && p.tok == token.LBRACK {
+		opening := p.pos
+		p.next()
+		// [T any](params) syntax
+		list := p.parseParameterList(nil, nil, token.RBRACK)
+		rbrack := p.expect(token.RBRACK)
+		tparams = &ast.FieldList{Opening: opening, List: list, Closing: rbrack}
+		// Type parameter lists must not be empty.
+		if tparams.NumFields() == 0 {
+			p.error(tparams.Closing, "empty type parameter list")
+			tparams = nil // avoid follow-on errors
 		}
-		rparen := p.expect(token.RPAREN)
-		return &ast.FieldList{Opening: lparen, List: list, Closing: rparen}
 	}
 
-	if typ := p.tryIdentOrType(); typ != nil {
+	opening := p.expect(token.LPAREN)
+
+	var fields []*ast.Field
+	if p.tok != token.RPAREN {
+		fields = p.parseParameterList(nil, nil, token.RPAREN)
+	}
+
+	rparen := p.expect(token.RPAREN)
+	params = &ast.FieldList{Opening: opening, List: fields, Closing: rparen}
+
+	return
+}
+
+func (p *parser) parseResult() *ast.FieldList {
+	if p.trace {
+		defer un(trace(p, "Result"))
+	}
+
+	if p.tok == token.LPAREN {
+		_, results := p.parseParameters(false)
+		return results
+	}
+
+	typ := p.tryIdentOrType()
+	if typ != nil {
 		list := make([]*ast.Field, 1)
 		list[0] = &ast.Field{Type: typ}
 		return &ast.FieldList{List: list}
@@ -1126,15 +1100,11 @@ func (p *parser) parseFuncType() *ast.FuncType {
 	}
 
 	pos := p.expect(token.FUNC)
-	// accept type parameters for more tolerant parsing but complain
-	if p.tok == token.LBRACK {
-		tparams := p.parseTypeParameters()
-		if tparams != nil {
-			p.error(tparams.Opening, "function type must have no type parameters")
-		}
+	tparams, params := p.parseParameters(true)
+	if tparams != nil {
+		p.error(tparams.Pos(), "function type must have no type parameters")
 	}
-	params := p.parseParameters(false)
-	results := p.parseParameters(true)
+	results := p.parseResult()
 
 	return &ast.FuncType{Func: pos, Params: params, Results: results}
 }
@@ -1162,13 +1132,13 @@ func (p *parser) parseMethodSpec() *ast.Field {
 				//
 				// Interface methods do not have type parameters. We parse them for a
 				// better error message and improved error recovery.
-				_ = p.parseParameterList(name0, nil, token.RBRACK, false)
+				_ = p.parseParameterList(name0, nil, token.RBRACK)
 				_ = p.expect(token.RBRACK)
 				p.error(lbrack, "interface method must have no type parameters")
 
 				// TODO(rfindley) refactor to share code with parseFuncType.
-				params := p.parseParameters(false)
-				results := p.parseParameters(true)
+				_, params := p.parseParameters(false)
+				results := p.parseResult()
 				idents = []*ast.Ident{ident}
 				typ = &ast.FuncType{
 					Func:    token.NoPos,
@@ -1197,8 +1167,8 @@ func (p *parser) parseMethodSpec() *ast.Field {
 		case p.tok == token.LPAREN:
 			// ordinary method
 			// TODO(rfindley) refactor to share code with parseFuncType.
-			params := p.parseParameters(false)
-			results := p.parseParameters(true)
+			_, params := p.parseParameters(false)
+			results := p.parseResult()
 			idents = []*ast.Ident{ident}
 			typ = &ast.FuncType{Func: token.NoPos, Params: params, Results: results}
 		default:
@@ -2080,7 +2050,7 @@ func (p *parser) parseBranchStmt(tok token.Token) *ast.BranchStmt {
 
 	pos := p.expect(tok)
 	var label *ast.Ident
-	if tok == token.GOTO || ((tok == token.CONTINUE || tok == token.BREAK) && p.tok == token.IDENT) {
+	if tok != token.FALLTHROUGH && p.tok == token.IDENT {
 		label = p.parseIdent()
 	}
 	p.expectSemi()
@@ -2602,9 +2572,11 @@ func (p *parser) parseGenericType(spec *ast.TypeSpec, openPos token.Pos, name0 *
 		defer un(trace(p, "parseGenericType"))
 	}
 
-	list := p.parseParameterList(name0, typ0, token.RBRACK, false)
+	list := p.parseParameterList(name0, typ0, token.RBRACK)
 	closePos := p.expect(token.RBRACK)
 	spec.TypeParams = &ast.FieldList{Opening: openPos, List: list, Closing: closePos}
+	// Let the type checker decide whether to accept type parameters on aliases:
+	// see go.dev/issue/46477.
 	if p.tok == token.ASSIGN {
 		// type alias
 		spec.Assign = p.pos
@@ -2799,23 +2771,19 @@ func (p *parser) parseFuncDecl() *ast.FuncDecl {
 
 	var recv *ast.FieldList
 	if p.tok == token.LPAREN {
-		recv = p.parseParameters(false)
+		_, recv = p.parseParameters(false)
 	}
 
 	ident := p.parseIdent()
 
-	var tparams *ast.FieldList
-	if p.tok == token.LBRACK {
-		tparams = p.parseTypeParameters()
-		if recv != nil && tparams != nil {
-			// Method declarations do not have type parameters. We parse them for a
-			// better error message and improved error recovery.
-			p.error(tparams.Opening, "method must have no type parameters")
-			tparams = nil
-		}
+	tparams, params := p.parseParameters(true)
+	if recv != nil && tparams != nil {
+		// Method declarations do not have type parameters. We parse them for a
+		// better error message and improved error recovery.
+		p.error(tparams.Opening, "method must have no type parameters")
+		tparams = nil
 	}
-	params := p.parseParameters(false)
-	results := p.parseParameters(true)
+	results := p.parseResult()
 
 	var body *ast.BlockStmt
 	switch p.tok {

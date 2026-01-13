@@ -10,7 +10,6 @@ import (
 	"crypto/rand"
 	"errors"
 	"internal/byteorder"
-	"math"
 	"math/bits"
 	"reflect"
 )
@@ -162,7 +161,7 @@ func appendT(h *Hash, v reflect.Value) {
 	case reflect.Bool:
 		h.WriteByte(btoi(v.Bool()))
 		return
-	case reflect.UnsafePointer, reflect.Pointer, reflect.Chan:
+	case reflect.UnsafePointer, reflect.Pointer:
 		var buf [8]byte
 		// because pointing to the abi.Escape call in comparableReady,
 		// So this is ok to hash pointer,
@@ -175,26 +174,4 @@ func appendT(h *Hash, v reflect.Value) {
 		return
 	}
 	panic(errors.New("maphash: hash of unhashable type " + v.Type().String()))
-}
-
-func (h *Hash) float64(f float64) {
-	if f == 0 {
-		h.WriteByte(0)
-		return
-	}
-	var buf [8]byte
-	if f != f {
-		byteorder.LEPutUint64(buf[:], randUint64())
-		h.Write(buf[:])
-		return
-	}
-	byteorder.LEPutUint64(buf[:], math.Float64bits(f))
-	h.Write(buf[:])
-}
-
-func btoi(b bool) byte {
-	if b {
-		return 1
-	}
-	return 0
 }

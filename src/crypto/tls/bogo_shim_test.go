@@ -35,10 +35,8 @@ var (
 
 	isHandshakerSupported = flag.Bool("is-handshaker-supported", false, "")
 
-	keyfile      = flag.String("key-file", "", "")
-	certfile     = flag.String("cert-file", "", "")
-	ocspResponse = flagBase64("ocsp-response", "")
-	signingPrefs = flagIntSlice("signing-prefs", "")
+	keyfile  = flag.String("key-file", "", "")
+	certfile = flag.String("cert-file", "", "")
 
 	trustCert = flag.String("trust-cert", "", "")
 
@@ -57,17 +55,13 @@ var (
 
 	resumeCount = flag.Int("resume-count", 0, "")
 
-	curves        = flagIntSlice("curves", "")
+	curves        = flagStringSlice("curves", "")
 	expectedCurve = flag.String("expect-curve-id", "", "")
-
-	verifyPrefs        = flagIntSlice("verify-prefs", "")
-	expectedSigAlg     = flag.String("expect-peer-signature-algorithm", "", "")
-	expectedPeerSigAlg = flagIntSlice("expect-peer-verify-pref", "")
 
 	shimID = flag.Uint64("shim-id", 0, "")
 	_      = flag.Bool("ipv6", false, "")
 
-	echConfigList              = flagBase64("ech-config-list", "")
+	echConfigListB64           = flag.String("ech-config-list", "", "")
 	expectECHAccepted          = flag.Bool("expect-ech-accept", false, "")
 	expectHRR                  = flag.Bool("expect-hrr", false, "")
 	expectNoHRR                = flag.Bool("expect-no-hrr", false, "")
@@ -77,7 +71,7 @@ var (
 	_                          = flag.Bool("expect-no-ech-name-override", false, "")
 	_                          = flag.String("expect-ech-name-override", "", "")
 	_                          = flag.Bool("reverify-on-resume", false, "")
-	onResumeECHConfigList      = flagBase64("on-resume-ech-config-list", "")
+	onResumeECHConfigListB64   = flag.String("on-resume-ech-config-list", "", "")
 	_                          = flag.Bool("on-resume-expect-reject-early-data", false, "")
 	onResumeExpectECHAccepted  = flag.Bool("on-resume-expect-ech-accept", false, "")
 	_                          = flag.Bool("on-resume-expect-no-ech-name-override", false, "")
@@ -88,10 +82,10 @@ var (
 
 	expectSessionMiss = flag.Bool("expect-session-miss", false, "")
 
-	_ = flag.Bool("enable-early-data", false, "")
-	_ = flag.Bool("on-resume-expect-accept-early-data", false, "")
-	_ = flag.Bool("expect-ticket-supports-early-data", false, "")
-	_ = flag.Bool("on-resume-shim-writes-first", false, "")
+	_                       = flag.Bool("enable-early-data", false, "")
+	_                       = flag.Bool("on-resume-expect-accept-early-data", false, "")
+	_                       = flag.Bool("expect-ticket-supports-early-data", false, "")
+	onResumeShimWritesFirst = flag.Bool("on-resume-shim-writes-first", false, "")
 
 	advertiseALPN        = flag.String("advertise-alpn", "", "")
 	expectALPN           = flag.String("expect-alpn", "", "")
@@ -104,14 +98,12 @@ var (
 
 	verifyPeer = flag.Bool("verify-peer", false, "")
 	_          = flag.Bool("use-custom-verify-callback", false, "")
-
-	waitForDebugger = flag.Bool("wait-for-debugger", false, "")
 )
 
 type stringSlice []string
 
 func flagStringSlice(name, usage string) *stringSlice {
-	f := new(stringSlice)
+	f := &stringSlice{}
 	flag.Var(f, name, usage)
 	return f
 }
@@ -125,63 +117,10 @@ func (saf *stringSlice) Set(s string) error {
 	return nil
 }
 
-type intSlice []int64
-
-func flagIntSlice(name, usage string) *intSlice {
-	f := new(intSlice)
-	flag.Var(f, name, usage)
-	return f
-}
-
-func (sf *intSlice) String() string {
-	return strings.Join(strings.Split(fmt.Sprint(*sf), " "), ",")
-}
-
-func (sf *intSlice) Set(s string) error {
-	i, err := strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		return err
-	}
-	*sf = append(*sf, i)
-	return nil
-}
-
-type base64Flag []byte
-
-func flagBase64(name, usage string) *base64Flag {
-	f := new(base64Flag)
-	flag.Var(f, name, usage)
-	return f
-}
-
-func (f *base64Flag) String() string {
-	return base64.StdEncoding.EncodeToString(*f)
-}
-
-func (f *base64Flag) Set(s string) error {
-	if *f != nil {
-		return fmt.Errorf("multiple base64 values not supported")
-	}
-	b, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		return err
-	}
-	*f = b
-	return nil
-}
-
 func bogoShim() {
 	if *isHandshakerSupported {
 		fmt.Println("No")
 		return
-	}
-
-	fmt.Printf("BoGo shim flags: %q", os.Args[1:])
-
-	// Test with both the default and insecure cipher suites.
-	var ciphersuites []uint16
-	for _, s := range append(CipherSuites(), InsecureCipherSuites()...) {
-		ciphersuites = append(ciphersuites, s.ID)
 	}
 
 	cfg := &Config{
@@ -191,8 +130,6 @@ func bogoShim() {
 		MaxVersion: uint16(*maxVersion),
 
 		ClientSessionCache: NewLRUClientSessionCache(0),
-
-		CipherSuites: ciphersuites,
 
 		GetConfigForClient: func(chi *ClientHelloInfo) (*Config, error) {
 
@@ -271,39 +208,7 @@ func bogoShim() {
 		if err != nil {
 			log.Fatalf("load key-file err: %s", err)
 		}
-		for _, id := range *signingPrefs {
-			pair.SupportedSignatureAlgorithms = append(pair.SupportedSignatureAlgorithms, SignatureScheme(id))
-		}
-		pair.OCSPStaple = *ocspResponse
-		// Use Get[Client]Certificate to force the use of the certificate, which
-		// more closely matches the BoGo expectations (e.g. handshake failure if
-		// no client certificates are compatible).
-		cfg.GetCertificate = func(chi *ClientHelloInfo) (*Certificate, error) {
-			if *expectedPeerSigAlg != nil {
-				if len(chi.SignatureSchemes) != len(*expectedPeerSigAlg) {
-					return nil, fmt.Errorf("unexpected signature algorithms: got %s, want %v", chi.SignatureSchemes, *expectedPeerSigAlg)
-				}
-				for i := range *expectedPeerSigAlg {
-					if chi.SignatureSchemes[i] != SignatureScheme((*expectedPeerSigAlg)[i]) {
-						return nil, fmt.Errorf("unexpected signature algorithms: got %s, want %v", chi.SignatureSchemes, *expectedPeerSigAlg)
-					}
-				}
-			}
-			return &pair, nil
-		}
-		cfg.GetClientCertificate = func(cri *CertificateRequestInfo) (*Certificate, error) {
-			if *expectedPeerSigAlg != nil {
-				if len(cri.SignatureSchemes) != len(*expectedPeerSigAlg) {
-					return nil, fmt.Errorf("unexpected signature algorithms: got %s, want %v", cri.SignatureSchemes, *expectedPeerSigAlg)
-				}
-				for i := range *expectedPeerSigAlg {
-					if cri.SignatureSchemes[i] != SignatureScheme((*expectedPeerSigAlg)[i]) {
-						return nil, fmt.Errorf("unexpected signature algorithms: got %s, want %v", cri.SignatureSchemes, *expectedPeerSigAlg)
-					}
-				}
-			}
-			return &pair, nil
-		}
+		cfg.Certificates = []Certificate{pair}
 	}
 	if *trustCert != "" {
 		pool := x509.NewCertPool()
@@ -327,24 +232,26 @@ func bogoShim() {
 		cfg.ClientAuth = VerifyClientCertIfGiven
 	}
 
-	if *echConfigList != nil {
-		cfg.EncryptedClientHelloConfigList = *echConfigList
+	if *echConfigListB64 != "" {
+		echConfigList, err := base64.StdEncoding.DecodeString(*echConfigListB64)
+		if err != nil {
+			log.Fatalf("parse ech-config-list err: %s", err)
+		}
+		cfg.EncryptedClientHelloConfigList = echConfigList
 		cfg.MinVersion = VersionTLS13
 	}
 
-	if *curves != nil {
-		for _, id := range *curves {
+	if len(*curves) != 0 {
+		for _, curveStr := range *curves {
+			id, err := strconv.Atoi(curveStr)
+			if err != nil {
+				log.Fatalf("failed to parse curve id %q: %s", curveStr, err)
+			}
 			cfg.CurvePreferences = append(cfg.CurvePreferences, CurveID(id))
 		}
 	}
 
-	if *verifyPrefs != nil {
-		for _, id := range *verifyPrefs {
-			testingOnlySupportedSignatureAlgorithms = append(testingOnlySupportedSignatureAlgorithms, SignatureScheme(id))
-		}
-	}
-
-	if *echServerConfig != nil {
+	if len(*echServerConfig) != 0 {
 		if len(*echServerConfig) != len(*echServerKey) || len(*echServerConfig) != len(*echServerRetryConfig) {
 			log.Fatal("-ech-server-config, -ech-server-key, and -ech-is-retry-config mismatch")
 		}
@@ -368,8 +275,12 @@ func bogoShim() {
 	}
 
 	for i := 0; i < *resumeCount+1; i++ {
-		if i > 0 && *onResumeECHConfigList != nil {
-			cfg.EncryptedClientHelloConfigList = *onResumeECHConfigList
+		if i > 0 && (*onResumeECHConfigListB64 != "") {
+			echConfigList, err := base64.StdEncoding.DecodeString(*onResumeECHConfigListB64)
+			if err != nil {
+				log.Fatalf("parse ech-config-list err: %s", err)
+			}
+			cfg.EncryptedClientHelloConfigList = echConfigList
 		}
 
 		conn, err := net.Dial("tcp", net.JoinHostPort("localhost", *port))
@@ -398,12 +309,6 @@ func bogoShim() {
 			}
 		}
 
-		// If we were instructed to wait for a debugger, then send SIGSTOP to ourselves.
-		// When the debugger attaches it will continue the process.
-		if *waitForDebugger {
-			pauseProcess()
-		}
-
 		for {
 			buf := make([]byte, 500)
 			var n int
@@ -419,16 +324,10 @@ func bogoShim() {
 				break
 			}
 		}
-		if err != io.EOF {
-			// Flush the TLS conn and then perform a graceful shutdown of the
-			// TCP connection to avoid the runner side hitting an unexpected
-			// write error before it has processed the alert we may have
-			// generated for the error condition.
-			orderlyShutdown(tlsConn)
-
+		if err != nil && err != io.EOF {
 			retryErr, ok := err.(*ECHRejectionError)
 			if !ok {
-				log.Fatal(err)
+				log.Fatalf("unexpected error type returned: %v", err)
 			}
 			if *expectNoECHRetryConfigs && len(retryErr.RetryConfigList) > 0 {
 				log.Fatalf("expected no ECH retry configs, got some")
@@ -493,47 +392,11 @@ func bogoShim() {
 			if err != nil {
 				log.Fatalf("failed to parse -expect-curve-id: %s", err)
 			}
-			if cs.CurveID != CurveID(expectedCurveID) {
+			if tlsConn.curveID != CurveID(expectedCurveID) {
 				log.Fatalf("unexpected curve id: want %d, got %d", expectedCurveID, tlsConn.curveID)
 			}
 		}
-
-		// TODO: implement testingOnlyPeerSignatureAlgorithm on resumption.
-		if *expectedSigAlg != "" && !cs.DidResume {
-			expectedSigAlgID, err := strconv.Atoi(*expectedSigAlg)
-			if err != nil {
-				log.Fatalf("failed to parse -expect-peer-signature-algorithm: %s", err)
-			}
-			if cs.testingOnlyPeerSignatureAlgorithm != SignatureScheme(expectedSigAlgID) {
-				log.Fatalf("unexpected peer signature algorithm: want %s, got %s", SignatureScheme(expectedSigAlgID), cs.testingOnlyPeerSignatureAlgorithm)
-			}
-		}
 	}
-}
-
-// If the test case produces an error, we don't want to immediately close the
-// TCP connection after generating an alert. The runner side may try to write
-// additional data to the connection before it reads the alert. If the conn
-// has already been torn down, then these writes will produce an unexpected
-// broken pipe err and fail the test.
-func orderlyShutdown(tlsConn *Conn) {
-	// Flush any pending alert data
-	tlsConn.flush()
-
-	netConn := tlsConn.NetConn()
-	tcpConn := netConn.(*net.TCPConn)
-	tcpConn.CloseWrite()
-
-	// Read and discard any data that was sent by the peer.
-	buf := make([]byte, maxPlaintext)
-	for {
-		n, err := tcpConn.Read(buf)
-		if n == 0 || err != nil {
-			break
-		}
-	}
-
-	tcpConn.CloseRead()
 }
 
 func TestBogoSuite(t *testing.T) {
@@ -557,7 +420,7 @@ func TestBogoSuite(t *testing.T) {
 	if *bogoLocalDir != "" {
 		bogoDir = *bogoLocalDir
 	} else {
-		const boringsslModVer = "v0.0.0-20250620172916-f51d8b099832"
+		const boringsslModVer = "v0.0.0-20241120195446-5cce3fbd23e1"
 		bogoDir = cryptotest.FetchModule(t, "boringssl.googlesource.com/boringssl.git", boringsslModVer)
 	}
 
@@ -612,36 +475,20 @@ func TestBogoSuite(t *testing.T) {
 	assertResults := map[string]string{
 		"CurveTest-Client-MLKEM-TLS13": "PASS",
 		"CurveTest-Server-MLKEM-TLS13": "PASS",
-
-		// Various signature algorithm tests checking that we enforce our
-		// preferences on the peer.
-		"ClientAuth-Enforced":                    "PASS",
-		"ServerAuth-Enforced":                    "PASS",
-		"ClientAuth-Enforced-TLS13":              "PASS",
-		"ServerAuth-Enforced-TLS13":              "PASS",
-		"VerifyPreferences-Advertised":           "PASS",
-		"VerifyPreferences-Enforced":             "PASS",
-		"Client-TLS12-NoSign-RSA_PKCS1_MD5_SHA1": "PASS",
-		"Server-TLS12-NoSign-RSA_PKCS1_MD5_SHA1": "PASS",
-		"Client-TLS13-NoSign-RSA_PKCS1_MD5_SHA1": "PASS",
-		"Server-TLS13-NoSign-RSA_PKCS1_MD5_SHA1": "PASS",
 	}
 
 	for name, result := range results.Tests {
 		// This is not really the intended way to do this... but... it works?
 		t.Run(name, func(t *testing.T) {
 			if result.Actual == "FAIL" && result.IsUnexpected {
-				t.Fail()
+				t.Fatal(result.Error)
 			}
-			if result.Error != "" {
-				t.Log(result.Error)
-			}
-			if exp, ok := assertResults[name]; ok && exp != result.Actual {
-				t.Errorf("unexpected result: got %s, want %s", result.Actual, exp)
+			if expectedResult, ok := assertResults[name]; ok && expectedResult != result.Actual {
+				t.Fatalf("unexpected result: got %s, want %s", result.Actual, assertResults[name])
 			}
 			delete(assertResults, name)
 			if result.Actual == "SKIP" {
-				t.SkipNow()
+				t.Skip()
 			}
 		})
 	}

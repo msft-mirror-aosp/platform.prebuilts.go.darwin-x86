@@ -23,7 +23,9 @@ func newBitset(n int) bitset {
 }
 
 func (bs bitset) Reset() {
-	clear(bs)
+	for i := range bs {
+		bs[i] = 0
+	}
 }
 
 func (bs bitset) Set(idx uint32) {

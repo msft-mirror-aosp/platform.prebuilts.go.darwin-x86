@@ -6,7 +6,6 @@ package runtime_test
 
 import (
 	"fmt"
-	"internal/asan"
 	"internal/testenv"
 	"reflect"
 	"regexp"
@@ -932,9 +931,6 @@ func TestFramePointerAdjust(t *testing.T) {
 	case "amd64", "arm64":
 	default:
 		t.Skipf("frame pointer is not supported on %s", GOARCH)
-	}
-	if asan.Enabled {
-		t.Skip("skipping test: ASAN forces heap allocation")
 	}
 	output := runTestProg(t, "testprog", "FramePointerAdjust")
 	if output != "" {

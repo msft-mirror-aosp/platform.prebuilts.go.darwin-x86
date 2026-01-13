@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/fs"
 	"net/url"
+	"path"
 	pathpkg "path"
 	"path/filepath"
 	"strings"
@@ -97,7 +98,7 @@ func proxyList() ([]proxySpec, error) {
 			// Single-word tokens are reserved for built-in behaviors, and anything
 			// containing the string ":/" or matching an absolute file path must be a
 			// complete URL. For all other paths, implicitly add "https://".
-			if strings.ContainsAny(url, ".:/") && !strings.Contains(url, ":/") && !filepath.IsAbs(url) && !pathpkg.IsAbs(url) {
+			if strings.ContainsAny(url, ".:/") && !strings.Contains(url, ":/") && !filepath.IsAbs(url) && !path.IsAbs(url) {
 				url = "https://" + url
 			}
 

@@ -5,7 +5,6 @@
 package sql
 
 import (
-	"bytes"
 	"context"
 	"database/sql/driver"
 	"errors"
@@ -1375,7 +1374,8 @@ func TestConnQuery(t *testing.T) {
 	db := newTestDB(t, "people")
 	defer closeDB(t, db)
 
-	ctx := t.Context()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -1402,7 +1402,8 @@ func TestConnRaw(t *testing.T) {
 	db := newTestDB(t, "people")
 	defer closeDB(t, db)
 
-	ctx := t.Context()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -1517,7 +1518,8 @@ func TestInvalidNilValues(t *testing.T) {
 			db := newTestDB(t, "people")
 			defer closeDB(t, db)
 
-			ctx := t.Context()
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 			conn, err := db.Conn(ctx)
 			if err != nil {
 				t.Fatal(err)
@@ -1545,7 +1547,8 @@ func TestConnTx(t *testing.T) {
 	db := newTestDB(t, "people")
 	defer closeDB(t, db)
 
-	ctx := t.Context()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -2790,7 +2793,8 @@ func TestManyErrBadConn(t *testing.T) {
 	// Conn
 	db = manyErrBadConnSetup()
 	defer closeDB(t, db)
-	ctx := t.Context()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -2931,7 +2935,8 @@ func TestConnExpiresFreshOutOfPool(t *testing.T) {
 	}
 	defer func() { nowFunc = time.Now }()
 
-	ctx := t.Context()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	db := newTestDB(t, "magicquery")
 	defer closeDB(t, db)
@@ -3781,7 +3786,8 @@ func TestIssue20647(t *testing.T) {
 	db := newTestDB(t, "people")
 	defer closeDB(t, db)
 
-	ctx := t.Context()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	conn, err := db.Conn(ctx)
 	if err != nil {
@@ -4136,7 +4142,9 @@ func TestNamedValueChecker(t *testing.T) {
 	}
 	defer db.Close()
 
-	ctx := t.Context()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	_, err = db.ExecContext(ctx, "WIPE")
 	if err != nil {
 		t.Fatal("exec wipe", err)
@@ -4184,7 +4192,9 @@ func TestNamedValueCheckerSkip(t *testing.T) {
 	}
 	defer db.Close()
 
-	ctx := t.Context()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	_, err = db.ExecContext(ctx, "WIPE")
 	if err != nil {
 		t.Fatal("exec wipe", err)
@@ -4295,7 +4305,8 @@ func TestQueryExecContextOnly(t *testing.T) {
 	}
 	defer db.Close()
 
-	ctx := t.Context()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	conn, err := db.Conn(ctx)
 	if err != nil {
@@ -4435,6 +4446,10 @@ func testContextCancelDuringRawBytesScan(t *testing.T, mode string) {
 	db := newTestDB(t, "people")
 	defer closeDB(t, db)
 
+	if _, err := db.Exec("USE_RAWBYTES"); err != nil {
+		t.Fatal(err)
+	}
+
 	// cancel used to call close asynchronously.
 	// This test checks that it waits so as not to interfere with RawBytes.
 	ctx, cancel := context.WithCancel(context.Background())
@@ -4526,61 +4541,6 @@ func TestContextCancelBetweenNextAndErr(t *testing.T) {
 	}
 }
 
-type testScanner struct {
-	scanf func(src any) error
-}
-
-func (ts testScanner) Scan(src any) error { return ts.scanf(src) }
-
-func TestContextCancelDuringScan(t *testing.T) {
-	db := newTestDB(t, "people")
-	defer closeDB(t, db)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	scanStart := make(chan any)
-	scanEnd := make(chan error)
-	scanner := &testScanner{
-		scanf: func(src any) error {
-			scanStart <- src
-			return <-scanEnd
-		},
-	}
-
-	// Start a query, and pause it mid-scan.
-	want := []byte("Alice")
-	r, err := db.QueryContext(ctx, "SELECT|people|name|name=?", string(want))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !r.Next() {
-		t.Fatalf("r.Next() = false, want true")
-	}
-	go func() {
-		r.Scan(scanner)
-	}()
-	got := <-scanStart
-	defer close(scanEnd)
-	gotBytes, ok := got.([]byte)
-	if !ok {
-		t.Fatalf("r.Scan returned %T, want []byte", got)
-	}
-	if !bytes.Equal(gotBytes, want) {
-		t.Fatalf("before cancel: r.Scan returned %q, want %q", gotBytes, want)
-	}
-
-	// Cancel the query.
-	// Sleep to give it a chance to finish canceling.
-	cancel()
-	time.Sleep(10 * time.Millisecond)
-
-	// Cancelling the query should not have changed the result.
-	if !bytes.Equal(gotBytes, want) {
-		t.Fatalf("after cancel: r.Scan result is now %q, want %q", gotBytes, want)
-	}
-}
-
 func TestNilErrorAfterClose(t *testing.T) {
 	db := newTestDB(t, "people")
 	defer closeDB(t, db)
@@ -4613,6 +4573,10 @@ func TestNilErrorAfterClose(t *testing.T) {
 func TestRawBytesReuse(t *testing.T) {
 	db := newTestDB(t, "people")
 	defer closeDB(t, db)
+
+	if _, err := db.Exec("USE_RAWBYTES"); err != nil {
+		t.Fatal(err)
+	}
 
 	var raw RawBytes
 

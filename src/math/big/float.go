@@ -488,7 +488,7 @@ func (z *Float) round(sbit uint) {
 				}
 				z.exp++
 				// adjust mantissa: divide by 2 to compensate for exponent adjustment
-				rshVU(z.mant, z.mant, 1)
+				shrVU(z.mant, z.mant, 1)
 				// set msb == carry == 1 from the mantissa overflow above
 				const msb = 1 << (_W - 1)
 				z.mant[n-1] |= msb
@@ -585,9 +585,9 @@ func fnorm(m nat) int64 {
 	}
 	s := nlz(m[len(m)-1])
 	if s > 0 {
-		c := lshVU(m, m, s)
+		c := shlVU(m, m, s)
 		if debugFloat && c != 0 {
-			panic("nlz or lshVU incorrect")
+			panic("nlz or shlVU incorrect")
 		}
 	}
 	return int64(s)
@@ -602,7 +602,7 @@ func (z *Float) SetInt(x *Int) *Float {
 	// are many trailing 0's.
 	bits := uint32(x.BitLen())
 	if z.prec == 0 {
-		z.prec = max(bits, 64)
+		z.prec = umax32(bits, 64)
 	}
 	z.acc = Exact
 	z.neg = x.neg
@@ -628,7 +628,7 @@ func (z *Float) SetRat(x *Rat) *Float {
 	a.SetInt(x.Num())
 	b.SetInt(x.Denom())
 	if z.prec == 0 {
-		z.prec = max(a.prec, b.prec)
+		z.prec = umax32(a.prec, b.prec)
 	}
 	return z.Quo(&a, &b)
 }
@@ -1110,11 +1110,11 @@ func (x *Float) Int(z *Int) (*Int, Accuracy) {
 		z.neg = x.neg
 		switch {
 		case exp > allBits:
-			z.abs = z.abs.lsh(x.mant, exp-allBits)
+			z.abs = z.abs.shl(x.mant, exp-allBits)
 		default:
 			z.abs = z.abs.set(x.mant)
 		case exp < allBits:
-			z.abs = z.abs.rsh(x.mant, allBits-exp)
+			z.abs = z.abs.shr(x.mant, allBits-exp)
 		}
 		return z, acc
 
@@ -1150,7 +1150,7 @@ func (x *Float) Rat(z *Rat) (*Rat, Accuracy) {
 		z.a.neg = x.neg
 		switch {
 		case x.exp > allBits:
-			z.a.abs = z.a.abs.lsh(x.mant, uint(x.exp-allBits))
+			z.a.abs = z.a.abs.shl(x.mant, uint(x.exp-allBits))
 			z.b.abs = z.b.abs[:0] // == 1 (see Rat)
 			// z already in normal form
 		default:
@@ -1160,7 +1160,7 @@ func (x *Float) Rat(z *Rat) (*Rat, Accuracy) {
 		case x.exp < allBits:
 			z.a.abs = z.a.abs.set(x.mant)
 			t := z.b.abs.setUint64(1)
-			z.b.abs = t.lsh(t, uint(allBits-x.exp))
+			z.b.abs = t.shl(t, uint(allBits-x.exp))
 			z.norm()
 		}
 		return z, Exact
@@ -1234,10 +1234,10 @@ func (z *Float) uadd(x, y *Float) {
 	switch {
 	case ex < ey:
 		if al {
-			t := nat(nil).lsh(y.mant, uint(ey-ex))
+			t := nat(nil).shl(y.mant, uint(ey-ex))
 			z.mant = z.mant.add(x.mant, t)
 		} else {
-			z.mant = z.mant.lsh(y.mant, uint(ey-ex))
+			z.mant = z.mant.shl(y.mant, uint(ey-ex))
 			z.mant = z.mant.add(x.mant, z.mant)
 		}
 	default:
@@ -1245,10 +1245,10 @@ func (z *Float) uadd(x, y *Float) {
 		z.mant = z.mant.add(x.mant, y.mant)
 	case ex > ey:
 		if al {
-			t := nat(nil).lsh(x.mant, uint(ex-ey))
+			t := nat(nil).shl(x.mant, uint(ex-ey))
 			z.mant = z.mant.add(t, y.mant)
 		} else {
-			z.mant = z.mant.lsh(x.mant, uint(ex-ey))
+			z.mant = z.mant.shl(x.mant, uint(ex-ey))
 			z.mant = z.mant.add(z.mant, y.mant)
 		}
 		ex = ey
@@ -1279,10 +1279,10 @@ func (z *Float) usub(x, y *Float) {
 	switch {
 	case ex < ey:
 		if al {
-			t := nat(nil).lsh(y.mant, uint(ey-ex))
+			t := nat(nil).shl(y.mant, uint(ey-ex))
 			z.mant = t.sub(x.mant, t)
 		} else {
-			z.mant = z.mant.lsh(y.mant, uint(ey-ex))
+			z.mant = z.mant.shl(y.mant, uint(ey-ex))
 			z.mant = z.mant.sub(x.mant, z.mant)
 		}
 	default:
@@ -1290,10 +1290,10 @@ func (z *Float) usub(x, y *Float) {
 		z.mant = z.mant.sub(x.mant, y.mant)
 	case ex > ey:
 		if al {
-			t := nat(nil).lsh(x.mant, uint(ex-ey))
+			t := nat(nil).shl(x.mant, uint(ex-ey))
 			z.mant = t.sub(t, y.mant)
 		} else {
-			z.mant = z.mant.lsh(x.mant, uint(ex-ey))
+			z.mant = z.mant.shl(x.mant, uint(ex-ey))
 			z.mant = z.mant.sub(z.mant, y.mant)
 		}
 		ex = ey
@@ -1327,9 +1327,9 @@ func (z *Float) umul(x, y *Float) {
 
 	e := int64(x.exp) + int64(y.exp)
 	if x == y {
-		z.mant = z.mant.sqr(nil, x.mant)
+		z.mant = z.mant.sqr(x.mant)
 	} else {
-		z.mant = z.mant.mul(nil, x.mant, y.mant)
+		z.mant = z.mant.mul(x.mant, y.mant)
 	}
 	z.setExpAndRound(e-fnorm(z.mant), 0)
 }
@@ -1363,10 +1363,8 @@ func (z *Float) uquo(x, y *Float) {
 	d := len(xadj) - len(y.mant)
 
 	// divide
-	stk := getStack()
-	defer stk.free()
 	var r nat
-	z.mant, r = z.mant.div(stk, nil, xadj, y.mant)
+	z.mant, r = z.mant.div(nil, xadj, y.mant)
 	e := int64(x.exp) - int64(y.exp) - int64(d-len(z.mant))*_W
 
 	// The result is long enough to include (at least) the rounding bit.
@@ -1453,7 +1451,7 @@ func (z *Float) Add(x, y *Float) *Float {
 	}
 
 	if z.prec == 0 {
-		z.prec = max(x.prec, y.prec)
+		z.prec = umax32(x.prec, y.prec)
 	}
 
 	if x.form == finite && y.form == finite {
@@ -1527,7 +1525,7 @@ func (z *Float) Sub(x, y *Float) *Float {
 	}
 
 	if z.prec == 0 {
-		z.prec = max(x.prec, y.prec)
+		z.prec = umax32(x.prec, y.prec)
 	}
 
 	if x.form == finite && y.form == finite {
@@ -1594,7 +1592,7 @@ func (z *Float) Mul(x, y *Float) *Float {
 	}
 
 	if z.prec == 0 {
-		z.prec = max(x.prec, y.prec)
+		z.prec = umax32(x.prec, y.prec)
 	}
 
 	z.neg = x.neg != y.neg
@@ -1639,7 +1637,7 @@ func (z *Float) Quo(x, y *Float) *Float {
 	}
 
 	if z.prec == 0 {
-		z.prec = max(x.prec, y.prec)
+		z.prec = umax32(x.prec, y.prec)
 	}
 
 	z.neg = x.neg != y.neg
@@ -1725,4 +1723,11 @@ func (x *Float) ord() int {
 		m = -m
 	}
 	return m
+}
+
+func umax32(x, y uint32) uint32 {
+	if x > y {
+		return x
+	}
+	return y
 }

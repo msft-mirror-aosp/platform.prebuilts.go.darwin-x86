@@ -536,6 +536,5 @@ var Anames = []string{
 	"WFI",
 	"WORD",
 	"YIELD",
-	"BTI",
 	"LAST",
 }

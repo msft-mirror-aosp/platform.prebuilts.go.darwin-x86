@@ -7,6 +7,7 @@ package slog_test
 import (
 	"log"
 	"log/slog"
+	"log/slog/internal/slogtest"
 	"os"
 )
 
@@ -48,13 +49,7 @@ func ExampleSetLogLoggerLevel_slog() {
 	defer slog.SetLogLoggerLevel(currentLogLevel) // revert changes after the example
 
 	defer slog.SetDefault(slog.Default()) // revert changes after the example
-	removeTime := func(groups []string, a slog.Attr) slog.Attr {
-		if a.Key == slog.TimeKey && len(groups) == 0 {
-			return slog.Attr{}
-		}
-		return a
-	}
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{ReplaceAttr: removeTime})))
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{ReplaceAttr: slogtest.RemoveTime})))
 
 	log.Print("error") // level=ERROR msg=error
 

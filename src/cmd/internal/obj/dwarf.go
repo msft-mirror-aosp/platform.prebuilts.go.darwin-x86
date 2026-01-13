@@ -288,16 +288,6 @@ func (c dwCtxt) Logf(format string, args ...interface{}) {
 	c.Link.Logf(format, args...)
 }
 
-func (c dwCtxt) AddIndirectTextRef(s dwarf.Sym, t interface{}) {
-	ls := s.(*LSym)
-	tsym := t.(*LSym)
-	// Note the doubling below -- DwTextCount is an estimate and
-	// usually a little short due to additional wrapper functions and
-	// such; by using c.DwTextCount*2 as the limit we'll ensure that
-	// we don't run out of space.
-	ls.WriteDwTxtAddrx(c.Link, ls.Size, tsym, c.DwTextCount*2)
-}
-
 func isDwarf64(ctxt *Link) bool {
 	return ctxt.Headtype == objabi.Haix
 }
@@ -381,8 +371,7 @@ func (ctxt *Link) populateDWARF(curfn Func, s *LSym) {
 		if err != nil {
 			ctxt.Diag("emitting DWARF for %s failed: %v", s.Name, err)
 		}
-		err = dwarf.PutConcreteFunc(dwctxt, fnstate, s.Wrapper(),
-			ctxt.DwTextCount)
+		err = dwarf.PutConcreteFunc(dwctxt, fnstate, s.Wrapper())
 	} else {
 		err = dwarf.PutDefaultFunc(dwctxt, fnstate, s.Wrapper())
 	}

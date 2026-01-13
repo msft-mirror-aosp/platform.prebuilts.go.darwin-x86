@@ -968,15 +968,17 @@ func BenchmarkParallelTimerLatency(b *testing.B) {
 	}
 	var total float64
 	var samples float64
-	maximum := Duration(0)
+	max := Duration(0)
 	for _, s := range stats {
-		maximum = max(maximum, s.max)
+		if s.max > max {
+			max = s.max
+		}
 		total += s.sum
 		samples += float64(s.count)
 	}
 	b.ReportMetric(0, "ns/op")
 	b.ReportMetric(total/samples, "avg-late-ns")
-	b.ReportMetric(float64(maximum.Nanoseconds()), "max-late-ns")
+	b.ReportMetric(float64(max.Nanoseconds()), "max-late-ns")
 }
 
 // Benchmark timer latency with staggered wakeup times and varying CPU bound

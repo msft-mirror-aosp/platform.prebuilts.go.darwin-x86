@@ -114,11 +114,7 @@ func Init() {
 		fsys.Bind(Dir(), filepath.Join(cfg.GOROOT, "src/crypto/internal/fips140"))
 	}
 
-	// ExperimentErr != nil if GOEXPERIMENT failed to parse. Typically
-	// cmd/go main will exit in this case, but it is allowed during
-	// toolchain selection, as the GOEXPERIMENT may be valid for the
-	// selected toolchain version.
-	if cfg.ExperimentErr == nil && cfg.Experiment.BoringCrypto && Enabled() {
+	if cfg.Experiment.BoringCrypto && Enabled() {
 		base.Fatalf("go: cannot use GOFIPS140 with GOEXPERIMENT=boringcrypto")
 	}
 }

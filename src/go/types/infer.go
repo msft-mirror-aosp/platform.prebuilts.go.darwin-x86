@@ -268,7 +268,7 @@ func (check *Checker) infer(posn positioner, tparams []*TypeParam, targs []Type,
 					}
 				case single && !core.tilde:
 					if traceInference {
-						u.tracef("-> set type parameter %s to constraint's common underlying type %s", tpar, core.typ)
+						u.tracef("-> set type parameter %s to constraint core type %s", tpar, core.typ)
 					}
 					// The corresponding type argument tx is unknown and the core term
 					// describes a single specific type and no tilde.
@@ -670,12 +670,11 @@ func coreTerm(tpar *TypeParam) (*term, bool) {
 	})
 	if n == 1 {
 		if debug {
-			u, _ := commonUnder(tpar, nil)
-			assert(under(single.typ) == u)
+			assert(debug && under(single.typ) == coreType(tpar))
 		}
 		return single, true
 	}
-	if typ, _ := commonUnder(tpar, nil); typ != nil {
+	if typ := coreType(tpar); typ != nil {
 		// A core type is always an underlying type.
 		// If any term of tpar has a tilde, we don't
 		// have a precise core type and we must return

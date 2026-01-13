@@ -18,29 +18,29 @@ var sink interface{}
 func slice0() {
 	var s []*int
 	// BAD: i should not escape
-	i := 0            // ERROR "moved to heap: i"
-	s = append(s, &i) // ERROR "append does not escape"
+	i := 0 // ERROR "moved to heap: i"
+	s = append(s, &i)
 	_ = s
 }
 
 func slice1() *int {
 	var s []*int
-	i := 0            // ERROR "moved to heap: i"
-	s = append(s, &i) // ERROR "append does not escape"
+	i := 0 // ERROR "moved to heap: i"
+	s = append(s, &i)
 	return s[0]
 }
 
 func slice2() []*int {
 	var s []*int
-	i := 0            // ERROR "moved to heap: i"
-	s = append(s, &i) // ERROR "append escapes to heap"
+	i := 0 // ERROR "moved to heap: i"
+	s = append(s, &i)
 	return s
 }
 
 func slice3() *int {
 	var s []*int
-	i := 0            // ERROR "moved to heap: i"
-	s = append(s, &i) // ERROR "append does not escape"
+	i := 0 // ERROR "moved to heap: i"
+	s = append(s, &i)
 	for _, p := range s {
 		return p
 	}
@@ -124,7 +124,7 @@ NextVar:
 				continue NextVar
 			}
 		}
-		out = append(out, inkv) // ERROR "append escapes to heap"
+		out = append(out, inkv)
 	}
 	return out
 }
@@ -167,7 +167,7 @@ var resolveIPAddrTests = []resolveIPAddrTest{
 }
 
 func setupTestData() {
-	resolveIPAddrTests = append(resolveIPAddrTests, // ERROR "append escapes to heap"
+	resolveIPAddrTests = append(resolveIPAddrTests,
 		[]resolveIPAddrTest{ // ERROR "\[\]resolveIPAddrTest{...} does not escape"
 			{"ip",
 				"localhost",

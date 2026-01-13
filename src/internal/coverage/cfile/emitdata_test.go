@@ -7,6 +7,7 @@ package cfile
 import (
 	"fmt"
 	"internal/coverage"
+	"internal/goexperiment"
 	"internal/platform"
 	"internal/testenv"
 	"os"
@@ -23,6 +24,9 @@ const fixedTestDir = false
 func TestCoverageApis(t *testing.T) {
 	if testing.Short() {
 		t.Skipf("skipping test: too long for short mode")
+	}
+	if !goexperiment.CoverageRedesign {
+		t.Skipf("skipping new coverage tests (experiment not enabled)")
 	}
 	testenv.MustHaveGoBuild(t)
 	dir := t.TempDir()
@@ -460,6 +464,9 @@ func TestApisOnNocoverBinary(t *testing.T) {
 func TestIssue56006EmitDataRaceCoverRunningGoroutine(t *testing.T) {
 	if testing.Short() {
 		t.Skipf("skipping test: too long for short mode")
+	}
+	if !goexperiment.CoverageRedesign {
+		t.Skipf("skipping new coverage tests (experiment not enabled)")
 	}
 
 	// This test requires "go test -race -cover", meaning that we need

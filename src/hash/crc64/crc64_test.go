@@ -6,15 +6,9 @@ package crc64
 
 import (
 	"encoding"
-	"hash"
-	"internal/testhash"
 	"io"
 	"testing"
 )
-
-func TestCRC64Hash(t *testing.T) {
-	testhash.TestHash(t, func() hash.Hash { return New(MakeTable(ISO)) })
-}
 
 type test struct {
 	outISO        uint64

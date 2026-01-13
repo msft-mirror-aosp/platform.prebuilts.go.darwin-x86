@@ -51,22 +51,17 @@ TEXT	runtime·msanmove(SB), NOSPLIT, $0-24
 	MOVV	dst+0(FP), RARG0
 	MOVV	src+8(FP), RARG1
 	MOVV	sz+16(FP), RARG2
-	// void __msan_memmove_go(void *dst, void *src, uintptr_t sz);
-	MOVV	$__msan_memmove_go(SB), FARG
+	// void __msan_memmove(void *dst, void *src, uintptr_t sz);
+	MOVV	$__msan_memmove(SB), FARG
 	JMP	msancall<>(SB)
 
 // Switches SP to g0 stack and calls (FARG). Arguments already set.
 TEXT	msancall<>(SB), NOSPLIT, $0-0
 	MOVV	R3, R23         // callee-saved
-	BEQ	g, call         // no g, still on a system stack
+	BEQ	g, g0stack      // no g, still on a system stack
 	MOVV	g_m(g), R14
-
-	// Switch to g0 stack if we aren't already on g0 or gsignal.
-	MOVV	m_gsignal(R14), R15
-	BEQ	R15, g, call
-
 	MOVV	m_g0(R14), R15
-	BEQ	R15, g, call
+	BEQ	R15, g, g0stack
 
 	MOVV	(g_sched+gobuf_sp)(R15), R9
 	MOVV	R9, R3

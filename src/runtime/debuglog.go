@@ -27,7 +27,6 @@ package runtime
 
 import (
 	"internal/abi"
-	"internal/byteorder"
 	"internal/runtime/atomic"
 	"internal/runtime/sys"
 	"unsafe"
@@ -96,7 +95,7 @@ func dlogImpl() *dloggerImpl {
 	if l == nil {
 		// Use sysAllocOS instead of sysAlloc because we want to interfere
 		// with the runtime as little as possible, and sysAlloc updates accounting.
-		l = (*dloggerImpl)(sysAllocOS(unsafe.Sizeof(dloggerImpl{}), "debug log"))
+		l = (*dloggerImpl)(sysAllocOS(unsafe.Sizeof(dloggerImpl{})))
 		if l == nil {
 			throw("failed to allocate debug log")
 		}
@@ -478,7 +477,14 @@ func (l *debugLogWriter) writeSync(tick, nano uint64) {
 //go:nosplit
 func (l *debugLogWriter) writeUint64LE(x uint64) {
 	var b [8]byte
-	byteorder.LEPutUint64(b[:], x)
+	b[0] = byte(x)
+	b[1] = byte(x >> 8)
+	b[2] = byte(x >> 16)
+	b[3] = byte(x >> 24)
+	b[4] = byte(x >> 32)
+	b[5] = byte(x >> 40)
+	b[6] = byte(x >> 48)
+	b[7] = byte(x >> 56)
 	l.bytes(b[:])
 }
 
@@ -570,7 +576,10 @@ func (r *debugLogReader) readUint64LEAt(pos uint64) uint64 {
 		b[i] = r.data.b[pos%uint64(len(r.data.b))]
 		pos++
 	}
-	return byteorder.LEUint64(b[:])
+	return uint64(b[0]) | uint64(b[1])<<8 |
+		uint64(b[2])<<16 | uint64(b[3])<<24 |
+		uint64(b[4])<<32 | uint64(b[5])<<40 |
+		uint64(b[6])<<48 | uint64(b[7])<<56
 }
 
 func (r *debugLogReader) peek() (tick uint64) {
@@ -765,7 +774,7 @@ func printDebugLogImpl() {
 	}
 	// Use sysAllocOS instead of sysAlloc because we want to interfere
 	// with the runtime as little as possible, and sysAlloc updates accounting.
-	state1 := sysAllocOS(unsafe.Sizeof(readState{})*uintptr(n), "debug log")
+	state1 := sysAllocOS(unsafe.Sizeof(readState{}) * uintptr(n))
 	if state1 == nil {
 		println("failed to allocate read state for", n, "logs")
 		printunlock()

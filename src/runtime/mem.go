@@ -46,18 +46,10 @@ import "unsafe"
 // which prevents us from allocating more stack.
 //
 //go:nosplit
-func sysAlloc(n uintptr, sysStat *sysMemStat, vmaName string) unsafe.Pointer {
+func sysAlloc(n uintptr, sysStat *sysMemStat) unsafe.Pointer {
 	sysStat.add(int64(n))
 	gcController.mappedReady.Add(int64(n))
-	p := sysAllocOS(n, vmaName)
-
-	// When using ASAN leak detection, we must tell ASAN about
-	// cases where we store pointers in mmapped memory.
-	if asanenabled {
-		lsanregisterrootregion(p, n)
-	}
-
-	return p
+	return sysAllocOS(n)
 }
 
 // sysUnused transitions a memory region from Ready to Prepared. It notifies the
@@ -119,13 +111,6 @@ func sysHugePageCollapse(v unsafe.Pointer, n uintptr) {
 //
 //go:nosplit
 func sysFree(v unsafe.Pointer, n uintptr, sysStat *sysMemStat) {
-	// When using ASAN leak detection, the memory being freed is
-	// known by the sanitizer. We need to unregister it so it's
-	// not accessed by it.
-	if asanenabled {
-		lsanunregisterrootregion(v, n)
-	}
-
 	sysStat.add(-int64(n))
 	gcController.mappedReady.Add(-int64(n))
 	sysFreeOS(v, n)
@@ -157,23 +142,15 @@ func sysFault(v unsafe.Pointer, n uintptr) {
 // NOTE: sysReserve returns OS-aligned memory, but the heap allocator
 // may use larger alignment, so the caller must be careful to realign the
 // memory obtained by sysReserve.
-func sysReserve(v unsafe.Pointer, n uintptr, vmaName string) unsafe.Pointer {
-	p := sysReserveOS(v, n, vmaName)
-
-	// When using ASAN leak detection, we must tell ASAN about
-	// cases where we store pointers in mmapped memory.
-	if asanenabled {
-		lsanregisterrootregion(p, n)
-	}
-
-	return p
+func sysReserve(v unsafe.Pointer, n uintptr) unsafe.Pointer {
+	return sysReserveOS(v, n)
 }
 
 // sysMap transitions a memory region from Reserved to Prepared. It ensures the
 // memory region can be efficiently transitioned to Ready.
 //
 // sysStat must be non-nil.
-func sysMap(v unsafe.Pointer, n uintptr, sysStat *sysMemStat, vmaName string) {
+func sysMap(v unsafe.Pointer, n uintptr, sysStat *sysMemStat) {
 	sysStat.add(int64(n))
-	sysMapOS(v, n, vmaName)
+	sysMapOS(v, n)
 }

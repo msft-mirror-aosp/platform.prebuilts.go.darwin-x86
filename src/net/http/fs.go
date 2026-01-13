@@ -67,11 +67,6 @@ func mapOpenError(originalErr error, name string, sep rune, stat func(string) (f
 	return originalErr
 }
 
-// errInvalidUnsafePath is returned by Dir.Open when the call to
-// filepath.Localize fails. filepath.Localize returns an error if the path
-// cannot be represented by the operating system.
-var errInvalidUnsafePath = errors.New("http: invalid or unsafe file path")
-
 // Open implements [FileSystem] using [os.Open], opening files for reading rooted
 // and relative to the directory d.
 func (d Dir) Open(name string) (File, error) {
@@ -81,7 +76,7 @@ func (d Dir) Open(name string) (File, error) {
 	}
 	path, err := filepath.Localize(path)
 	if err != nil {
-		return nil, errInvalidUnsafePath
+		return nil, errors.New("http: invalid or unsafe file path")
 	}
 	dir := string(d)
 	if dir == "" {
@@ -773,9 +768,6 @@ func toHTTPError(err error) (msg string, httpStatus int) {
 	if errors.Is(err, fs.ErrPermission) {
 		return "403 Forbidden", StatusForbidden
 	}
-	if errors.Is(err, errInvalidUnsafePath) {
-		return "404 page not found", StatusNotFound
-	}
 	// Default:
 	return "500 Internal Server Error", StatusInternalServerError
 }
@@ -862,7 +854,7 @@ func containsDotDot(v string) bool {
 	if !strings.Contains(v, "..") {
 		return false
 	}
-	for ent := range strings.FieldsFuncSeq(v, isSlashRune) {
+	for _, ent := range strings.FieldsFunc(v, isSlashRune) {
 		if ent == ".." {
 			return true
 		}
@@ -1022,7 +1014,7 @@ func parseRange(s string, size int64) ([]httpRange, error) {
 	}
 	var ranges []httpRange
 	noOverlap := false
-	for ra := range strings.SplitSeq(s[len(b):], ",") {
+	for _, ra := range strings.Split(s[len(b):], ",") {
 		ra = textproto.TrimString(ra)
 		if ra == "" {
 			continue

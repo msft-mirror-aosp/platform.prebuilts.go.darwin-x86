@@ -18,7 +18,10 @@ var optimize = true // set to false to force slow-path conversions for testing
 // prefix of s and prefix, with the character case of s ignored.
 // The prefix argument must be all lower-case.
 func commonPrefixLenIgnoreCase(s, prefix string) int {
-	n := min(len(prefix), len(s))
+	n := len(prefix)
+	if n > len(s) {
+		n = len(s)
+	}
 	for i := 0; i < n; i++ {
 		c := s[i]
 		if 'A' <= c && c <= 'Z' {
@@ -77,12 +80,12 @@ func (b *decimal) set(s string) (ok bool) {
 	if i >= len(s) {
 		return
 	}
-	switch s[i] {
-	case '+':
+	switch {
+	case s[i] == '+':
 		i++
-	case '-':
-		i++
+	case s[i] == '-':
 		b.neg = true
+		i++
 	}
 
 	// digits
@@ -135,10 +138,9 @@ func (b *decimal) set(s string) (ok bool) {
 			return
 		}
 		esign := 1
-		switch s[i] {
-		case '+':
+		if s[i] == '+' {
 			i++
-		case '-':
+		} else if s[i] == '-' {
 			i++
 			esign = -1
 		}
@@ -177,12 +179,12 @@ func readFloat(s string) (mantissa uint64, exp int, neg, trunc, hex bool, i int,
 	if i >= len(s) {
 		return
 	}
-	switch s[i] {
-	case '+':
+	switch {
+	case s[i] == '+':
 		i++
-	case '-':
-		i++
+	case s[i] == '-':
 		neg = true
+		i++
 	}
 
 	// digits
@@ -269,10 +271,9 @@ loop:
 			return
 		}
 		esign := 1
-		switch s[i] {
-		case '+':
+		if s[i] == '+' {
 			i++
-		case '-':
+		} else if s[i] == '-' {
 			i++
 			esign = -1
 		}

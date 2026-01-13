@@ -326,7 +326,7 @@ var mu = sync.Mutex{} // mu protects loggedOpts.
 // funcName is the name of the function
 // A typical use for this to accumulate an explanation for a missed optimization, for example, why did something escape?
 func NewLoggedOpt(pos, lastPos src.XPos, what, pass, funcName string, args ...interface{}) *LoggedOpt {
-	pass = strings.ReplaceAll(pass, " ", "_")
+	pass = strings.Replace(pass, " ", "_", -1)
 	return &LoggedOpt{pos, lastPos, pass, funcName, what, args}
 }
 
@@ -405,7 +405,7 @@ func fixSlash(f string) string {
 	if os.PathSeparator == '/' {
 		return f
 	}
-	return strings.ReplaceAll(f, string(os.PathSeparator), "/")
+	return strings.Replace(f, string(os.PathSeparator), "/", -1)
 }
 
 func uriIfy(f string) DocumentURI {

@@ -209,12 +209,14 @@ func (l *gcCPULimiterState) updateLocked(now int64) {
 		for _, pp := range allp {
 			typ, duration := pp.limiterEvent.consume(now)
 			switch typ {
-			case limiterEventIdle:
-				sched.idleTime.Add(duration)
-				idleTime += duration
 			case limiterEventIdleMarkWork:
+				fallthrough
+			case limiterEventIdle:
 				idleTime += duration
-			case limiterEventMarkAssist, limiterEventScavengeAssist:
+				sched.idleTime.Add(duration)
+			case limiterEventMarkAssist:
+				fallthrough
+			case limiterEventScavengeAssist:
 				assistTime += duration
 			case limiterEventNone:
 				break
@@ -468,12 +470,14 @@ func (e *limiterEvent) stop(typ limiterEventType, now int64) {
 	}
 	// Account for the event.
 	switch typ {
-	case limiterEventIdle:
-		sched.idleTime.Add(duration)
-		gcCPULimiter.addIdleTime(duration)
 	case limiterEventIdleMarkWork:
 		gcCPULimiter.addIdleTime(duration)
-	case limiterEventMarkAssist, limiterEventScavengeAssist:
+	case limiterEventIdle:
+		gcCPULimiter.addIdleTime(duration)
+		sched.idleTime.Add(duration)
+	case limiterEventMarkAssist:
+		fallthrough
+	case limiterEventScavengeAssist:
 		gcCPULimiter.addAssistTime(duration)
 	default:
 		throw("limiterEvent.stop: invalid limiter event type found")

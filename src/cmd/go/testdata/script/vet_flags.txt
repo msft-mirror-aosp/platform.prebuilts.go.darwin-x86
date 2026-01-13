@@ -1,5 +1,3 @@
-[short] skip 'runs test'
-
 env GO111MODULE=on
 
 # Issue 35837: "go vet -<analyzer> <std package>" should use the requested

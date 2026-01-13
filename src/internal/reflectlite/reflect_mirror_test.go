@@ -13,7 +13,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -41,7 +40,12 @@ func newVisitor() visitor {
 	return v
 }
 func (v visitor) filter(name string) bool {
-	return slices.Contains(typeNames, name)
+	for _, typeName := range typeNames {
+		if typeName == name {
+			return true
+		}
+	}
+	return false
 }
 
 func (v visitor) Visit(n ast.Node) ast.Visitor {

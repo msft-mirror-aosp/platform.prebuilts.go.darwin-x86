@@ -13,8 +13,6 @@ import (
 )
 
 func TestNoteReading(t *testing.T) {
-	tooSlow(t, "runs build")
-
 	// cmd/internal/buildid already has tests that the basic reading works.
 	// This test is essentially checking that -ldflags=-buildid=XXX works,
 	// both in internal and external linking mode.

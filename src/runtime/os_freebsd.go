@@ -91,7 +91,7 @@ const (
 func cpuset_getaffinity(level int, which int, id int64, size int, mask *byte) int32
 
 //go:systemstack
-func getCPUCount() int32 {
+func getncpu() int32 {
 	// Use a large buffer for the CPU mask. We're on the system
 	// stack, so this is fine, and we can't allocate memory for a
 	// dynamically-sized buffer at this point.
@@ -233,7 +233,7 @@ func newosproc(mp *m) {
 //
 //go:nosplit
 func newosproc0(stacksize uintptr, fn unsafe.Pointer) {
-	stack := sysAlloc(stacksize, &memstats.stacks_sys, "OS thread stack")
+	stack := sysAlloc(stacksize, &memstats.stacks_sys)
 	if stack == nil {
 		writeErrStr(failallocatestack)
 		exit(1)
@@ -276,7 +276,7 @@ func libpreinit() {
 }
 
 func osinit() {
-	numCPUStartup = getCPUCount()
+	ncpu = getncpu()
 	if physPageSize == 0 {
 		physPageSize = getPageSize()
 	}

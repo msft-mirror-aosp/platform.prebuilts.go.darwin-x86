@@ -21,6 +21,7 @@ import (
 var (
 	DefaultUserAgent                  = defaultUserAgent
 	NewLoggingConn                    = newLoggingConn
+	ExportAppendTime                  = appendTime
 	ExportRefererForURL               = refererForURL
 	ExportServerNewConn               = (*Server).newConn
 	ExportCloseWriteAndWait           = (*conn).closeWriteAndWait

@@ -15,7 +15,7 @@ import (
 
 // A MapFS is a simple in-memory file system for use in tests,
 // represented as a map from path names (arguments to Open)
-// to information about the files, directories, or symbolic links they represent.
+// to information about the files or directories they represent.
 //
 // The map need not include parent directories for files contained
 // in the map; those will be synthesized if needed.
@@ -34,27 +34,21 @@ type MapFS map[string]*MapFile
 
 // A MapFile describes a single file in a [MapFS].
 type MapFile struct {
-	Data    []byte      // file content or symlink destination
+	Data    []byte      // file content
 	Mode    fs.FileMode // fs.FileInfo.Mode
 	ModTime time.Time   // fs.FileInfo.ModTime
 	Sys     any         // fs.FileInfo.Sys
 }
 
 var _ fs.FS = MapFS(nil)
-var _ fs.ReadLinkFS = MapFS(nil)
 var _ fs.File = (*openMapFile)(nil)
 
-// Open opens the named file after following any symbolic links.
+// Open opens the named file.
 func (fsys MapFS) Open(name string) (fs.File, error) {
 	if !fs.ValidPath(name) {
 		return nil, &fs.PathError{Op: "open", Path: name, Err: fs.ErrNotExist}
 	}
-	realName, ok := fsys.resolveSymlinks(name)
-	if !ok {
-		return nil, &fs.PathError{Op: "open", Path: name, Err: fs.ErrNotExist}
-	}
-
-	file := fsys[realName]
+	file := fsys[name]
 	if file != nil && file.Mode&fs.ModeDir == 0 {
 		// Ordinary file
 		return &openMapFile{name, mapFileInfo{path.Base(name), file}, 0}, nil
@@ -65,8 +59,10 @@ func (fsys MapFS) Open(name string) (fs.File, error) {
 	// But file can also be non-nil, in case the user wants to set metadata for the directory explicitly.
 	// Either way, we need to construct the list of children of this directory.
 	var list []mapFileInfo
+	var elem string
 	var need = make(map[string]bool)
-	if realName == "." {
+	if name == "." {
+		elem = "."
 		for fname, f := range fsys {
 			i := strings.Index(fname, "/")
 			if i < 0 {
@@ -78,7 +74,8 @@ func (fsys MapFS) Open(name string) (fs.File, error) {
 			}
 		}
 	} else {
-		prefix := realName + "/"
+		elem = name[strings.LastIndex(name, "/")+1:]
+		prefix := name + "/"
 		for fname, f := range fsys {
 			if strings.HasPrefix(fname, prefix) {
 				felem := fname[len(prefix):]
@@ -110,101 +107,7 @@ func (fsys MapFS) Open(name string) (fs.File, error) {
 	if file == nil {
 		file = &MapFile{Mode: fs.ModeDir | 0555}
 	}
-	var elem string
-	if name == "." {
-		elem = "."
-	} else {
-		elem = name[strings.LastIndex(name, "/")+1:]
-	}
 	return &mapDir{name, mapFileInfo{elem, file}, list, 0}, nil
-}
-
-func (fsys MapFS) resolveSymlinks(name string) (_ string, ok bool) {
-	// Fast path: if a symlink is in the map, resolve it.
-	if file := fsys[name]; file != nil && file.Mode.Type() == fs.ModeSymlink {
-		target := string(file.Data)
-		if path.IsAbs(target) {
-			return "", false
-		}
-		return fsys.resolveSymlinks(path.Join(path.Dir(name), target))
-	}
-
-	// Check if each parent directory (starting at root) is a symlink.
-	for i := 0; i < len(name); {
-		j := strings.Index(name[i:], "/")
-		var dir string
-		if j < 0 {
-			dir = name
-			i = len(name)
-		} else {
-			dir = name[:i+j]
-			i += j
-		}
-		if file := fsys[dir]; file != nil && file.Mode.Type() == fs.ModeSymlink {
-			target := string(file.Data)
-			if path.IsAbs(target) {
-				return "", false
-			}
-			return fsys.resolveSymlinks(path.Join(path.Dir(dir), target) + name[i:])
-		}
-		i += len("/")
-	}
-	return name, fs.ValidPath(name)
-}
-
-// ReadLink returns the destination of the named symbolic link.
-func (fsys MapFS) ReadLink(name string) (string, error) {
-	info, err := fsys.lstat(name)
-	if err != nil {
-		return "", &fs.PathError{Op: "readlink", Path: name, Err: err}
-	}
-	if info.f.Mode.Type() != fs.ModeSymlink {
-		return "", &fs.PathError{Op: "readlink", Path: name, Err: fs.ErrInvalid}
-	}
-	return string(info.f.Data), nil
-}
-
-// Lstat returns a FileInfo describing the named file.
-// If the file is a symbolic link, the returned FileInfo describes the symbolic link.
-// Lstat makes no attempt to follow the link.
-func (fsys MapFS) Lstat(name string) (fs.FileInfo, error) {
-	info, err := fsys.lstat(name)
-	if err != nil {
-		return nil, &fs.PathError{Op: "lstat", Path: name, Err: err}
-	}
-	return info, nil
-}
-
-func (fsys MapFS) lstat(name string) (*mapFileInfo, error) {
-	if !fs.ValidPath(name) {
-		return nil, fs.ErrNotExist
-	}
-	realDir, ok := fsys.resolveSymlinks(path.Dir(name))
-	if !ok {
-		return nil, fs.ErrNotExist
-	}
-	elem := path.Base(name)
-	realName := path.Join(realDir, elem)
-
-	file := fsys[realName]
-	if file != nil {
-		return &mapFileInfo{elem, file}, nil
-	}
-
-	if realName == "." {
-		return &mapFileInfo{elem, &MapFile{Mode: fs.ModeDir | 0555}}, nil
-	}
-	// Maybe a directory.
-	prefix := realName + "/"
-	for fname := range fsys {
-		if strings.HasPrefix(fname, prefix) {
-			return &mapFileInfo{elem, &MapFile{Mode: fs.ModeDir | 0555}}, nil
-		}
-	}
-	// If the directory name is not in the map,
-	// and there are no children of the name in the map,
-	// then the directory is treated as not existing.
-	return nil, fs.ErrNotExist
 }
 
 // fsOnly is a wrapper that hides all but the fs.FS methods,

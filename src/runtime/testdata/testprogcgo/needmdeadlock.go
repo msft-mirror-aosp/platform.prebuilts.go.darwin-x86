@@ -70,6 +70,8 @@ import "C"
 
 import (
 	"fmt"
+	"os"
+	"time"
 )
 
 func init() {
@@ -82,8 +84,12 @@ func GoNeedM() {
 
 func NeedmDeadlock() {
 	// The failure symptom is that the program hangs because of a
-	// deadlock in needm. Instead of using an arbitrary timeout,
-	// we let the test deadline expire if it deadlocks.
+	// deadlock in needm, so set an alarm.
+	go func() {
+		time.Sleep(5 * time.Second)
+		fmt.Println("Hung for 5 seconds")
+		os.Exit(1)
+	}()
 
 	C.runNeedmSignalThread()
 	fmt.Println("OK")

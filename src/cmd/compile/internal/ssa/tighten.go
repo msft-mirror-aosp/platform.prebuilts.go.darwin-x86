@@ -27,8 +27,6 @@ func tighten(f *Func) {
 	defer f.Cache.freeValueSlice(startMem)
 	endMem := f.Cache.allocValueSlice(f.NumBlocks())
 	defer f.Cache.freeValueSlice(endMem)
-	distinctArgs := f.newSparseSet(f.NumValues())
-	defer f.retSparseSet(distinctArgs)
 	memState(f, startMem, endMem)
 
 	for _, b := range f.Blocks {
@@ -45,22 +43,16 @@ func tighten(f *Func) {
 				// SelectN is typically, ultimately, a register.
 				continue
 			}
-			if opcodeTable[v.Op].nilCheck {
-				// Nil checks need to stay in their block. See issue 72860.
-				continue
-			}
-			// Count distinct arguments which will need a register.
-			distinctArgs.clear()
-
+			// Count arguments which will need a register.
+			narg := 0
 			for _, a := range v.Args {
 				// SP and SB are special registers and have no effect on
 				// the allocation of general-purpose registers.
 				if a.needRegister() && a.Op != OpSB && a.Op != OpSP {
-					distinctArgs.add(a.ID)
+					narg++
 				}
 			}
-
-			if distinctArgs.size() >= 2 && !v.Type.IsFlags() {
+			if narg >= 2 && !v.Type.IsFlags() {
 				// Don't move values with more than one input, as that may
 				// increase register pressure.
 				// We make an exception for flags, as we want flag generators
@@ -89,7 +81,9 @@ func tighten(f *Func) {
 		changed = false
 
 		// Reset target
-		clear(target)
+		for i := range target {
+			target[i] = nil
+		}
 
 		// Compute target locations (for moveable values only).
 		// target location = the least common ancestor of all uses in the dominator tree.
@@ -124,21 +118,18 @@ func tighten(f *Func) {
 
 		// If the target location is inside a loop,
 		// move the target location up to just before the loop head.
-		if !loops.hasIrreducible {
-			// Loop info might not be correct for irreducible loops. See issue 75569.
-			for _, b := range f.Blocks {
-				origloop := loops.b2l[b.ID]
-				for _, v := range b.Values {
-					t := target[v.ID]
-					if t == nil {
-						continue
-					}
-					targetloop := loops.b2l[t.ID]
-					for targetloop != nil && (origloop == nil || targetloop.depth > origloop.depth) {
-						t = idom[targetloop.header.ID]
-						target[v.ID] = t
-						targetloop = loops.b2l[t.ID]
-					}
+		for _, b := range f.Blocks {
+			origloop := loops.b2l[b.ID]
+			for _, v := range b.Values {
+				t := target[v.ID]
+				if t == nil {
+					continue
+				}
+				targetloop := loops.b2l[t.ID]
+				for targetloop != nil && (origloop == nil || targetloop.depth > origloop.depth) {
+					t = idom[targetloop.header.ID]
+					target[v.ID] = t
+					targetloop = loops.b2l[t.ID]
 				}
 			}
 		}

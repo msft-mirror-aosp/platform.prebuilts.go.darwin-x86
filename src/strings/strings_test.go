@@ -7,7 +7,6 @@ package strings_test
 import (
 	"bytes"
 	"fmt"
-	"internal/asan"
 	"io"
 	"iter"
 	"math"
@@ -1474,12 +1473,6 @@ var ReplaceTests = []struct {
 
 func TestReplace(t *testing.T) {
 	for _, tt := range ReplaceTests {
-		if !asan.Enabled { // See issue #72973.
-			allocs := testing.AllocsPerRun(10, func() { Replace(tt.in, tt.old, tt.new, tt.n) })
-			if allocs > 1 {
-				t.Errorf("Replace(%q, %q, %q, %d) allocates %.2f objects", tt.in, tt.old, tt.new, tt.n, allocs)
-			}
-		}
 		if s := Replace(tt.in, tt.old, tt.new, tt.n); s != tt.out {
 			t.Errorf("Replace(%q, %q, %q, %d) = %q, want %q", tt.in, tt.old, tt.new, tt.n, s, tt.out)
 		}
@@ -1489,64 +1482,6 @@ func TestReplace(t *testing.T) {
 				t.Errorf("ReplaceAll(%q, %q, %q) = %q, want %q", tt.in, tt.old, tt.new, s, tt.out)
 			}
 		}
-	}
-}
-
-func FuzzReplace(f *testing.F) {
-	for _, tt := range ReplaceTests {
-		f.Add(tt.in, tt.old, tt.new, tt.n)
-	}
-	f.Fuzz(func(t *testing.T, in, old, new string, n int) {
-		differentImpl := func(in, old, new string, n int) string {
-			var out Builder
-			if n < 0 {
-				n = math.MaxInt
-			}
-			for i := 0; i < len(in); {
-				if n == 0 {
-					out.WriteString(in[i:])
-					break
-				}
-				if HasPrefix(in[i:], old) {
-					out.WriteString(new)
-					i += len(old)
-					n--
-					if len(old) != 0 {
-						continue
-					}
-					if i == len(in) {
-						break
-					}
-				}
-				if len(old) == 0 {
-					_, length := utf8.DecodeRuneInString(in[i:])
-					out.WriteString(in[i : i+length])
-					i += length
-				} else {
-					out.WriteByte(in[i])
-					i++
-				}
-			}
-			if len(old) == 0 && n != 0 {
-				out.WriteString(new)
-			}
-			return out.String()
-		}
-		if simple, replace := differentImpl(in, old, new, n), Replace(in, old, new, n); simple != replace {
-			t.Errorf("The two implementations do not match %q != %q for Replace(%q, %q, %q, %d)", simple, replace, in, old, new, n)
-		}
-	})
-}
-
-func BenchmarkReplace(b *testing.B) {
-	for _, tt := range ReplaceTests {
-		desc := fmt.Sprintf("%q %q %q %d", tt.in, tt.old, tt.new, tt.n)
-		b.Run(desc, func(b *testing.B) {
-			b.ReportAllocs()
-			for b.Loop() {
-				Replace(tt.in, tt.old, tt.new, tt.n)
-			}
-		})
 	}
 }
 
@@ -1875,9 +1810,8 @@ func makeBenchInputHard() string {
 		"hello", "world",
 	}
 	x := make([]byte, 0, 1<<20)
-	r := rand.New(rand.NewSource(99))
 	for {
-		i := r.Intn(len(tokens))
+		i := rand.Intn(len(tokens))
 		if len(x)+len(tokens[i]) >= 1<<20 {
 			break
 		}
@@ -1965,9 +1899,8 @@ func BenchmarkCountByte(b *testing.B) {
 var makeFieldsInput = func() string {
 	x := make([]byte, 1<<20)
 	// Input is ~10% space, ~10% 2-byte UTF-8, rest ASCII non-space.
-	r := rand.New(rand.NewSource(99))
 	for i := range x {
-		switch r.Intn(10) {
+		switch rand.Intn(10) {
 		case 0:
 			x[i] = ' '
 		case 1:
@@ -1986,9 +1919,8 @@ var makeFieldsInput = func() string {
 var makeFieldsInputASCII = func() string {
 	x := make([]byte, 1<<20)
 	// Input is ~10% space, rest ASCII non-space.
-	r := rand.New(rand.NewSource(99))
 	for i := range x {
-		if r.Intn(10) == 0 {
+		if rand.Intn(10) == 0 {
 			x[i] = ' '
 		} else {
 			x[i] = 'x'

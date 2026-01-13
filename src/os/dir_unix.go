@@ -46,19 +46,11 @@ func (d *dirInfo) close() {
 
 func (f *File) readdir(n int, mode readdirMode) (names []string, dirents []DirEntry, infos []FileInfo, err error) {
 	// If this file has no dirInfo, create one.
-	var d *dirInfo
-	for {
-		d = f.dirinfo.Load()
-		if d != nil {
-			break
-		}
-		newD := new(dirInfo)
-		if f.dirinfo.CompareAndSwap(nil, newD) {
-			d = newD
-			break
-		}
+	d := f.dirinfo.Load()
+	if d == nil {
+		d = new(dirInfo)
+		f.dirinfo.Store(d)
 	}
-
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if d.buf == nil {

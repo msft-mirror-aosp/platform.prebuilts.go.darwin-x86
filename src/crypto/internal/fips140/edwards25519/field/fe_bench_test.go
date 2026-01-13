@@ -47,11 +47,3 @@ func BenchmarkMult32(b *testing.B) {
 		x.Mult32(x, 0xaa42aa42)
 	}
 }
-
-func BenchmarkBytes(b *testing.B) {
-	x := new(Element).One()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		x.Bytes()
-	}
-}

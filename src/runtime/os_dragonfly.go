@@ -78,7 +78,7 @@ const (
 
 var sigset_all = sigset{[4]uint32{^uint32(0), ^uint32(0), ^uint32(0), ^uint32(0)}}
 
-func getCPUCount() int32 {
+func getncpu() int32 {
 	mib := [2]uint32{_CTL_HW, _HW_NCPU}
 	out := uint32(0)
 	nout := unsafe.Sizeof(out)
@@ -174,7 +174,7 @@ func newosproc(mp *m) {
 }
 
 func osinit() {
-	numCPUStartup = getCPUCount()
+	ncpu = getncpu()
 	if physPageSize == 0 {
 		physPageSize = getPageSize()
 	}
@@ -216,12 +216,8 @@ func unminit() {
 	getg().m.procid = 0
 }
 
-// Called from mexit, but not from dropm, to undo the effect of thread-owned
+// Called from exitm, but not from drop, to undo the effect of thread-owned
 // resources in minit, semacreate, or elsewhere. Do not take locks after calling this.
-//
-// This always runs without a P, so //go:nowritebarrierrec is required.
-//
-//go:nowritebarrierrec
 func mdestroy(mp *m) {
 }
 

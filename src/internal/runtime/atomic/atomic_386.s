@@ -5,14 +5,13 @@
 #include "textflag.h"
 #include "funcdata.h"
 
-// func Cas(ptr *int32, old, new int32) bool
+// bool Cas(int32 *val, int32 old, int32 new)
 // Atomically:
-//	if *ptr == old {
-//		*ptr = new
-//		return true
-//	} else {
-//		return false
-//	}
+//	if(*val == old){
+//		*val = new;
+//		return 1;
+//	}else
+//		return 0;
 TEXT ·Cas(SB), NOSPLIT, $0-13
 	MOVL	ptr+0(FP), BX
 	MOVL	old+4(FP), AX
@@ -64,13 +63,13 @@ TEXT ·Xaddint32(SB), NOSPLIT, $0-12
 TEXT ·Xaddint64(SB), NOSPLIT, $0-20
 	JMP	·Xadd64(SB)
 
-// func Cas64(ptr *uint64, old, new uint64) bool
+// bool ·Cas64(uint64 *val, uint64 old, uint64 new)
 // Atomically:
-//	if *ptr == old {
-//		*ptr = new
-//		return true
+//	if(*val == old){
+//		*val = new;
+//		return 1;
 //	} else {
-//		return false
+//		return 0;
 //	}
 TEXT ·Cas64(SB), NOSPLIT, $0-21
 	NO_LOCAL_POINTERS
@@ -87,14 +86,13 @@ TEXT ·Cas64(SB), NOSPLIT, $0-21
 	SETEQ	ret+20(FP)
 	RET
 
-// func Casp1(ptr *unsafe.Pointer, old, new unsafe.Pointer) bool
+// bool Casp1(void **p, void *old, void *new)
 // Atomically:
-//	if *ptr == old {
-//		*ptr = new
-//		return true
-//	} else {
-//		return false
-//	}
+//	if(*p == old){
+//		*p = new;
+//		return 1;
+//	}else
+//		return 0;
 TEXT ·Casp1(SB), NOSPLIT, $0-13
 	MOVL	ptr+0(FP), BX
 	MOVL	old+4(FP), AX

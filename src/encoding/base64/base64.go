@@ -6,7 +6,7 @@
 package base64
 
 import (
-	"internal/byteorder"
+	"encoding/binary"
 	"io"
 	"slices"
 	"strconv"
@@ -538,7 +538,7 @@ func (enc *Encoding) Decode(dst, src []byte) (n int, err error) {
 			enc.decodeMap[src2[6]],
 			enc.decodeMap[src2[7]],
 		); ok {
-			byteorder.BEPutUint64(dst[n:], dn)
+			binary.BigEndian.PutUint64(dst[n:], dn)
 			n += 6
 			si += 8
 		} else {
@@ -559,7 +559,7 @@ func (enc *Encoding) Decode(dst, src []byte) (n int, err error) {
 			enc.decodeMap[src2[2]],
 			enc.decodeMap[src2[3]],
 		); ok {
-			byteorder.BEPutUint32(dst[n:], dn)
+			binary.BigEndian.PutUint32(dst[n:], dn)
 			n += 3
 			si += 4
 		} else {

@@ -6,6 +6,7 @@ package os
 
 import (
 	"internal/itoa"
+	"runtime"
 	"syscall"
 	"time"
 )
@@ -80,12 +81,23 @@ func (p *Process) wait() (ps *ProcessState, err error) {
 		return nil, NewSyscallError("wait", err)
 	}
 
-	p.doRelease(statusDone)
+	p.pidDeactivate(statusDone)
 	ps = &ProcessState{
 		pid:    waitmsg.Pid,
 		status: &waitmsg,
 	}
 	return ps, nil
+}
+
+func (p *Process) release() error {
+	p.Pid = -1
+
+	// Just mark the PID unusable.
+	p.pidDeactivate(statusReleased)
+
+	// no need for a finalizer anymore
+	runtime.SetFinalizer(p, nil)
+	return nil
 }
 
 func findProcess(pid int) (p *Process, err error) {

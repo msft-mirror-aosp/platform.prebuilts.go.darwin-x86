@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"slices"
 	"testing"
 )
 
@@ -30,14 +29,12 @@ func equal(p, q *FileSet) error {
 		return fmt.Errorf("different bases: %d != %d", p.base, q.base)
 	}
 
-	pfiles := slices.Collect(p.tree.all())
-	qfiles := slices.Collect(q.tree.all())
-	if len(pfiles) != len(qfiles) {
-		return fmt.Errorf("different number of files: %d != %d", len(pfiles), len(qfiles))
+	if len(p.files) != len(q.files) {
+		return fmt.Errorf("different number of files: %d != %d", len(p.files), len(q.files))
 	}
 
-	for i, f := range pfiles {
-		g := qfiles[i]
+	for i, f := range p.files {
+		g := q.files[i]
 		if f.name != g.name {
 			return fmt.Errorf("different filenames: %q != %q", f.name, g.name)
 		}
@@ -91,7 +88,7 @@ func TestSerialization(t *testing.T) {
 	p := NewFileSet()
 	checkSerialize(t, p)
 	// add some files
-	for i := range 10 {
+	for i := 0; i < 10; i++ {
 		f := p.AddFile(fmt.Sprintf("file%d", i), p.Base()+i, i*100)
 		checkSerialize(t, p)
 		// add some lines and alternative file infos

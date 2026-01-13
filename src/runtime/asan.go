@@ -26,7 +26,6 @@ func ASanWrite(addr unsafe.Pointer, len int) {
 
 // Private interface for the runtime.
 const asanenabled = true
-const asanenabledBit = 1
 
 // asan{read,write} are nosplit because they may be called between
 // fork and exec, when the stack must not grow. See issue #50391.
@@ -62,14 +61,6 @@ func asanpoison(addr unsafe.Pointer, sz uintptr)
 //go:noescape
 func asanregisterglobals(addr unsafe.Pointer, n uintptr)
 
-//go:noescape
-func lsanregisterrootregion(addr unsafe.Pointer, n uintptr)
-
-//go:noescape
-func lsanunregisterrootregion(addr unsafe.Pointer, n uintptr)
-
-func lsandoleakcheck()
-
 // These are called from asan_GOARCH.s
 //
 //go:cgo_import_static __asan_read_go
@@ -77,6 +68,3 @@ func lsandoleakcheck()
 //go:cgo_import_static __asan_unpoison_go
 //go:cgo_import_static __asan_poison_go
 //go:cgo_import_static __asan_register_globals_go
-//go:cgo_import_static __lsan_register_root_region_go
-//go:cgo_import_static __lsan_unregister_root_region_go
-//go:cgo_import_static __lsan_do_leak_check_go

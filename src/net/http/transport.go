@@ -1358,7 +1358,7 @@ func (w *wantConn) tryDeliver(pc *persistConn, err error, idleAt time.Time) bool
 
 // cancel marks w as no longer wanting a result (for example, due to cancellation).
 // If a connection has been delivered already, cancel returns it with t.putOrCloseIdleConn.
-func (w *wantConn) cancel(t *Transport) {
+func (w *wantConn) cancel(t *Transport, err error) {
 	w.mu.Lock()
 	var pc *persistConn
 	if w.done {
@@ -1372,10 +1372,7 @@ func (w *wantConn) cancel(t *Transport) {
 	w.done = true
 	w.mu.Unlock()
 
-	// HTTP/2 connections (pc.alt != nil) aren't removed from the idle pool on use,
-	// and should not be added back here. If the pconn isn't in the idle pool,
-	// it's because we removed it due to an error.
-	if pc != nil && pc.alt == nil {
+	if pc != nil {
 		t.putOrCloseIdleConn(pc)
 	}
 }
@@ -1510,7 +1507,7 @@ func (t *Transport) getConn(treq *transportRequest, cm connectMethod) (_ *persis
 	}
 	defer func() {
 		if err != nil {
-			w.cancel(t)
+			w.cancel(t, err)
 		}
 	}()
 
@@ -2578,13 +2575,6 @@ func (b *readWriteCloserBody) Read(p []byte) (n int, err error) {
 	return b.ReadWriteCloser.Read(p)
 }
 
-func (b *readWriteCloserBody) CloseWrite() error {
-	if cw, ok := b.ReadWriteCloser.(interface{ CloseWrite() error }); ok {
-		return cw.CloseWrite()
-	}
-	return fmt.Errorf("CloseWrite: %w", ErrNotSupported)
-}
-
 // nothingWrittenError wraps a write errors which ended up writing zero bytes.
 type nothingWrittenError struct {
 	error
@@ -2934,17 +2924,11 @@ func (pc *persistConn) closeLocked(err error) {
 	pc.mutateHeaderFunc = nil
 }
 
-func schemePort(scheme string) string {
-	switch scheme {
-	case "http":
-		return "80"
-	case "https":
-		return "443"
-	case "socks5", "socks5h":
-		return "1080"
-	default:
-		return ""
-	}
+var portMap = map[string]string{
+	"http":    "80",
+	"https":   "443",
+	"socks5":  "1080",
+	"socks5h": "1080",
 }
 
 func idnaASCIIFromURL(url *url.URL) string {
@@ -2959,7 +2943,7 @@ func idnaASCIIFromURL(url *url.URL) string {
 func canonicalAddr(url *url.URL) string {
 	port := url.Port()
 	if port == "" {
-		port = schemePort(url.Scheme)
+		port = portMap[url.Scheme]
 	}
 	return net.JoinHostPort(idnaASCIIFromURL(url), port)
 }

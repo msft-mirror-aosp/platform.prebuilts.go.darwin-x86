@@ -180,7 +180,7 @@ func ToSlash(path string) string {
 	return replaceStringByte(path, Separator, '/')
 }
 
-// FromSlash is filepath.FromSlash.
+// FromSlash is filepath.ToSlash.
 func FromSlash(path string) string {
 	if Separator == '/' {
 		return path

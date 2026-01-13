@@ -129,23 +129,13 @@ func test() {
 	}
 }
 
-func _[T any](x T) {
-	for range x /* ERROR "cannot range over x (variable of type T constrained by any): no specific type" */ {
-	}
-}
-
-func _[T interface{int; string}](x T) {
-	for range x /* ERROR "cannot range over x (variable of type T constrained by interface{int; string} with empty type set): no specific type" */ {
-	}
-}
-
 func _[T int | string](x T) {
-	for range x /* ERROR "cannot range over x (variable of type T constrained by int | string): int and string have different underlying types" */ {
+	for range x /* ERROR "cannot range over x (variable of type T constrained by int | string): no core type" */ {
 	}
 }
 
 func _[T int | int64](x T) {
-	for range x /* ERROR "cannot range over x (variable of type T constrained by int | int64): int and int64 have different underlying types" */ {
+	for range x /* ERROR "cannot range over x (variable of type T constrained by int | int64): no core type" */ {
 	}
 }
 
@@ -161,11 +151,6 @@ func _[T any](x func(func(T) bool)) {
 
 func _[T ~func(func(int) bool)](x T) {
 	for _ = range x { // ok
-	}
-}
-
-func _[T func() bool | func(int) bool]() {
-	for range func /* ERROR "func must be func(yield func(...) bool): in yield type, func() bool and func(int) bool have different underlying types" */ (T) {} {
 	}
 }
 

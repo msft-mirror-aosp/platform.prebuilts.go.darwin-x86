@@ -10,7 +10,6 @@ import (
 	"bufio"
 	"bytes"
 	"cmd/internal/cov/covcmd"
-	"cmd/internal/par"
 	"container/heap"
 	"context"
 	"debug/elf"
@@ -57,10 +56,9 @@ type Builder struct {
 	readySema chan bool
 	ready     actionQueue
 
-	id             sync.Mutex
-	toolIDCache    par.Cache[string, string] // tool name -> tool ID
-	gccToolIDCache map[string]string         // tool name -> tool ID
-	buildIDCache   map[string]string         // file name -> build ID
+	id           sync.Mutex
+	toolIDCache  map[string]string // tool name -> tool ID
+	buildIDCache map[string]string // file name -> build ID
 }
 
 // NOTE: Much of Action would not need to be exported if not for test.
@@ -97,12 +95,11 @@ type Action struct {
 	CacheExecutable bool // Whether to cache executables produced by link steps
 
 	// Generated files, directories.
-	Objdir           string         // directory for intermediate objects
-	Target           string         // goal of the action: the created package or executable
-	built            string         // the actual created package or executable
-	cachedExecutable string         // the cached executable, if CacheExecutable was set
-	actionID         cache.ActionID // cache ID of action input
-	buildID          string         // build ID of action output
+	Objdir   string         // directory for intermediate objects
+	Target   string         // goal of the action: the created package or executable
+	built    string         // the actual created package or executable
+	actionID cache.ActionID // cache ID of action input
+	buildID  string         // build ID of action output
 
 	VetxOnly  bool       // Mode=="vet": only being called to supply info about dependencies
 	needVet   bool       // Mode=="build": need to fill in vet config
@@ -133,10 +130,6 @@ func (a *Action) BuildID() string { return a.buildID }
 // BuiltTarget returns the actual file that was built. This differs
 // from Target when the result was cached.
 func (a *Action) BuiltTarget() string { return a.built }
-
-// CachedExecutable returns the cached executable, if CacheExecutable
-// was set and the executable could be cached, and "" otherwise.
-func (a *Action) CachedExecutable() string { return a.cachedExecutable }
 
 // An actionQueue is a priority queue of actions.
 type actionQueue []*Action
@@ -275,7 +268,7 @@ func NewBuilder(workDir string) *Builder {
 	b := new(Builder)
 
 	b.actionCache = make(map[cacheKey]*Action)
-	b.gccToolIDCache = make(map[string]string)
+	b.toolIDCache = make(map[string]string)
 	b.buildIDCache = make(map[string]string)
 
 	printWorkDir := false

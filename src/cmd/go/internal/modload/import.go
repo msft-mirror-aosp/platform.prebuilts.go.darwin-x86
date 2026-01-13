@@ -661,15 +661,6 @@ var (
 	haveGoFilesCache par.ErrCache[string, bool] // dir → haveGoFiles
 )
 
-// PkgIsInLocalModule reports whether the directory of the package with
-// the given pkgpath, exists in the module with the given modpath
-// at the given modroot, and contains go source files.
-func PkgIsInLocalModule(pkgpath, modpath, modroot string) bool {
-	const isLocal = true
-	_, haveGoFiles, err := dirInModule(pkgpath, modpath, modroot, isLocal)
-	return err == nil && haveGoFiles
-}
-
 // dirInModule locates the directory that would hold the package named by the given path,
 // if it were in the module with module path mpath and root mdir.
 // If path is syntactically not within mpath,
@@ -682,8 +673,6 @@ func PkgIsInLocalModule(pkgpath, modpath, modroot string) bool {
 // whether there are in fact Go source files in that directory.
 // A non-nil error indicates that the existence of the directory and/or
 // source files could not be determined, for example due to a permission error.
-//
-// TODO(matloob): Could we use the modindex to check packages in indexed modules?
 func dirInModule(path, mpath, mdir string, isLocal bool) (dir string, haveGoFiles bool, err error) {
 	// Determine where to expect the package.
 	if path == mpath {

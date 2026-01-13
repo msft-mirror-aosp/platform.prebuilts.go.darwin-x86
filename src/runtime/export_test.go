@@ -11,7 +11,6 @@ import (
 	"internal/goarch"
 	"internal/goos"
 	"internal/runtime/atomic"
-	"internal/runtime/gc"
 	"internal/runtime/sys"
 	"unsafe"
 )
@@ -35,11 +34,11 @@ var ReadRandomFailed = &readRandomFailed
 
 var Fastlog2 = fastlog2
 
+var Atoi = atoi
+var Atoi32 = atoi32
 var ParseByteCount = parseByteCount
 
 var Nanotime = nanotime
-var Cputicks = cputicks
-var CyclesPerSecond = pprof_cyclesPerSecond
 var NetpollBreak = netpollBreak
 var Usleep = usleep
 
@@ -364,7 +363,7 @@ func ReadMemStatsSlow() (base, slow MemStats) {
 		slow.Mallocs = 0
 		slow.Frees = 0
 		slow.HeapReleased = 0
-		var bySize [gc.NumSizeClasses]struct {
+		var bySize [_NumSizeClasses]struct {
 			Mallocs, Frees uint64
 		}
 
@@ -392,11 +391,11 @@ func ReadMemStatsSlow() (base, slow MemStats) {
 
 		// Collect per-sizeclass free stats.
 		var smallFree uint64
-		for i := 0; i < gc.NumSizeClasses; i++ {
+		for i := 0; i < _NumSizeClasses; i++ {
 			slow.Frees += m.smallFreeCount[i]
 			bySize[i].Frees += m.smallFreeCount[i]
 			bySize[i].Mallocs += m.smallFreeCount[i]
-			smallFree += m.smallFreeCount[i] * uint64(gc.SizeClassToSize[i])
+			smallFree += m.smallFreeCount[i] * uint64(class_to_size[i])
 		}
 		slow.Frees += m.tinyAllocCount + m.largeFreeCount
 		slow.Mallocs += slow.Frees
@@ -537,7 +536,7 @@ func MapNextArenaHint() (start, end uintptr, ok bool) {
 	} else {
 		start, end = addr, addr+heapArenaBytes
 	}
-	got := sysReserve(unsafe.Pointer(addr), physPageSize, "")
+	got := sysReserve(unsafe.Pointer(addr), physPageSize)
 	ok = (addr == uintptr(got))
 	if !ok {
 		// We were unable to get the requested reservation.
@@ -1232,7 +1231,6 @@ func AllocMSpan() *MSpan {
 	systemstack(func() {
 		lock(&mheap_.lock)
 		s = (*mspan)(mheap_.spanalloc.alloc())
-		s.init(0, 0)
 		unlock(&mheap_.lock)
 	})
 	return (*MSpan)(s)
@@ -1254,30 +1252,6 @@ func MSpanCountAlloc(ms *MSpan, bits []byte) int {
 	result := s.countAlloc()
 	s.gcmarkBits = nil
 	return result
-}
-
-type MSpanQueue mSpanQueue
-
-func (q *MSpanQueue) Size() int {
-	return (*mSpanQueue)(q).n
-}
-
-func (q *MSpanQueue) Push(s *MSpan) {
-	(*mSpanQueue)(q).push((*mspan)(s))
-}
-
-func (q *MSpanQueue) Pop() *MSpan {
-	s := (*mSpanQueue)(q).pop()
-	return (*MSpan)(s)
-}
-
-func (q *MSpanQueue) TakeAll(p *MSpanQueue) {
-	(*mSpanQueue)(q).takeAll((*mSpanQueue)(p))
-}
-
-func (q *MSpanQueue) PopN(n int) MSpanQueue {
-	p := (*mSpanQueue)(q).popN(n)
-	return (MSpanQueue)(p)
 }
 
 const (
@@ -1796,21 +1770,15 @@ func BlockUntilEmptyFinalizerQueue(timeout int64) bool {
 	return blockUntilEmptyFinalizerQueue(timeout)
 }
 
-func BlockUntilEmptyCleanupQueue(timeout int64) bool {
-	return gcCleanups.blockUntilEmpty(timeout)
-}
-
 func FrameStartLine(f *Frame) int {
 	return f.startLine
 }
 
 // PersistentAlloc allocates some memory that lives outside the Go heap.
 // This memory will never be freed; use sparingly.
-func PersistentAlloc(n, align uintptr) unsafe.Pointer {
-	return persistentalloc(n, align, &memstats.other_sys)
+func PersistentAlloc(n uintptr) unsafe.Pointer {
+	return persistentalloc(n, 0, &memstats.other_sys)
 }
-
-const TagAlign = tagAlign
 
 // FPCallers works like Callers and uses frame pointer unwinding to populate
 // pcBuf with the return addresses of the physical frames on the stack.
@@ -1911,23 +1879,3 @@ func (b BitCursor) Write(data *byte, cnt uintptr) {
 func (b BitCursor) Offset(cnt uintptr) BitCursor {
 	return BitCursor{b: b.b.offset(cnt)}
 }
-
-const (
-	BubbleAssocUnbubbled     = bubbleAssocUnbubbled
-	BubbleAssocCurrentBubble = bubbleAssocCurrentBubble
-	BubbleAssocOtherBubble   = bubbleAssocOtherBubble
-)
-
-type TraceStackTable traceStackTable
-
-func (t *TraceStackTable) Reset() {
-	t.tab.reset()
-}
-
-func TraceStack(gp *G, tab *TraceStackTable) {
-	traceStack(0, gp, (*traceStackTable)(tab))
-}
-
-var DebugDecorateMappings = &debug.decoratemappings
-
-func SetVMANameSupported() bool { return setVMANameSupported() }

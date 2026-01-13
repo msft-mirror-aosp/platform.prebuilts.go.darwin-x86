@@ -48,7 +48,7 @@ func afterErrorAction() {
 	if *flagH {
 		panic("error")
 	}
-	if nerrors > 20 && !*flagAllErrors {
+	if nerrors > 20 {
 		Exitf("too many errors")
 	}
 }

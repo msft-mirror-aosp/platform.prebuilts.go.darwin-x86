@@ -6,10 +6,7 @@
 
 package net
 
-import (
-	"internal/poll"
-	"os/exec"
-)
+import "internal/poll"
 
 var (
 	// Placeholders for saving original socket system calls.
@@ -56,5 +53,3 @@ func forceCloseSockets() {
 		poll.CloseFunc(s)
 	}
 }
-
-func addCmdInheritedHandle(cmd *exec.Cmd, fd uintptr) {}

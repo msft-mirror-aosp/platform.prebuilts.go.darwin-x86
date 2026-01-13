@@ -51,9 +51,11 @@ TEXT runtime·gogo(SB), NOSPLIT, $0-8
 	I64Load gobuf_pc(R0)
 	I64Store $0
 
+	MOVD gobuf_ret(R0), RET0
 	MOVD gobuf_ctxt(R0), CTXT
 	// clear to help garbage collector
 	MOVD $0, gobuf_sp(R0)
+	MOVD $0, gobuf_ret(R0)
 	MOVD $0, gobuf_ctxt(R0)
 
 	I32Const $1
@@ -192,6 +194,10 @@ TEXT runtime·memhash32(SB),NOSPLIT|NOFRAME,$0-24
 	JMP	runtime·memhash32Fallback(SB)
 TEXT runtime·memhash64(SB),NOSPLIT|NOFRAME,$0-24
 	JMP	runtime·memhash64Fallback(SB)
+
+TEXT runtime·return0(SB), NOSPLIT, $0-0
+	MOVD $0, RET0
+	RET
 
 TEXT runtime·asminit(SB), NOSPLIT, $0-0
 	// No per-thread init.
@@ -532,7 +538,7 @@ TEXT wasm_pc_f_loop(SB),NOSPLIT,$0
 			Get SP
 			I32Const $8
 			I32Sub
-			I32Load $2 // PC_F
+			I32Load16U $2 // PC_F
 
 			CallIndirect $0
 			Drop
@@ -568,7 +574,7 @@ outer:
 			Get SP
 			I32Const $8
 			I32Sub
-			I32Load $2 // PC_F
+			I32Load16U $2 // PC_F
 			Tee R2
 
 			Get R0

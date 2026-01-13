@@ -65,7 +65,11 @@ func query(ctx context.Context, filename, query string, bufSize int) (addrs []st
 	case r := <-ch:
 		return r.addrs, r.err
 	case <-ctx.Done():
-		return nil, mapErr(ctx.Err())
+		return nil, &DNSError{
+			Name:      query,
+			Err:       ctx.Err().Error(),
+			IsTimeout: ctx.Err() == context.DeadlineExceeded,
+		}
 	}
 }
 
@@ -139,7 +143,7 @@ func toLower(in string) string {
 func lookupProtocol(ctx context.Context, name string) (proto int, err error) {
 	lines, err := query(ctx, netdir+"/cs", "!protocol="+toLower(name), 128)
 	if err != nil {
-		return 0, newDNSError(err, name, "")
+		return 0, err
 	}
 	if len(lines) == 0 {
 		return 0, UnknownNetworkError(name)
@@ -225,16 +229,16 @@ func (*Resolver) lookupPortWithNetwork(ctx context.Context, network, errNetwork,
 	lines, err := queryCS(ctx, network, "127.0.0.1", toLower(service))
 	if err != nil {
 		if stringslite.HasSuffix(err.Error(), "can't translate service") {
-			return 0, newDNSError(errUnknownPort, errNetwork+"/"+service, "")
+			return 0, &DNSError{Err: "unknown port", Name: errNetwork + "/" + service, IsNotFound: true}
 		}
-		return 0, newDNSError(err, errNetwork+"/"+service, "")
+		return
 	}
 	if len(lines) == 0 {
-		return 0, newDNSError(errUnknownPort, errNetwork+"/"+service, "")
+		return 0, &DNSError{Err: "unknown port", Name: errNetwork + "/" + service, IsNotFound: true}
 	}
 	f := getFields(lines[0])
 	if len(f) < 2 {
-		return 0, newDNSError(errUnknownPort, errNetwork+"/"+service, "")
+		return 0, &DNSError{Err: "unknown port", Name: errNetwork + "/" + service, IsNotFound: true}
 	}
 	s := f[1]
 	if i := bytealg.IndexByteString(s, '!'); i >= 0 {
@@ -243,7 +247,7 @@ func (*Resolver) lookupPortWithNetwork(ctx context.Context, network, errNetwork,
 	if n, _, ok := dtoi(s); ok {
 		return n, nil
 	}
-	return 0, newDNSError(errUnknownPort, errNetwork+"/"+service, "")
+	return 0, &DNSError{Err: "unknown port", Name: errNetwork + "/" + service, IsNotFound: true}
 }
 
 func (r *Resolver) lookupCNAME(ctx context.Context, name string) (cname string, err error) {
@@ -265,7 +269,7 @@ func (r *Resolver) lookupCNAME(ctx context.Context, name string) (cname string, 
 			return f[2] + ".", nil
 		}
 	}
-	return "", &DNSError{Err: "bad response from ndb/dns", Name: name}
+	return "", errors.New("bad response from ndb/dns")
 }
 
 func (r *Resolver) lookupSRV(ctx context.Context, service, proto, name string) (cname string, addrs []*SRV, err error) {

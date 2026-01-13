@@ -40,9 +40,8 @@ func TestCallback(t *testing.T) {
 }
 
 func run(t *testing.T, dir string, lto bool, args ...string) {
-	testenv.MustHaveGoRun(t)
 	runArgs := append([]string{"run", "."}, args...)
-	cmd := exec.Command(testenv.GoToolPath(t), runArgs...)
+	cmd := exec.Command("go", runArgs...)
 	cmd.Dir = dir
 	if lto {
 		// On the builders we're using the default /usr/bin/ld, but
@@ -69,7 +68,7 @@ func run(t *testing.T, dir string, lto bool, args ...string) {
 
 func mustHaveCxx(t *testing.T) {
 	// Ask the go tool for the CXX it's configured to use.
-	cxx, err := exec.Command(testenv.GoToolPath(t), "env", "CXX").CombinedOutput()
+	cxx, err := exec.Command("go", "env", "CXX").CombinedOutput()
 	if err != nil {
 		t.Fatalf("go env CXX failed: %s", err)
 	}

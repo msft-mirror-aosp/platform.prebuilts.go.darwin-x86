@@ -232,7 +232,10 @@ func deadcode(f *Func) {
 			f.NamedValues[*name] = values[:j]
 		}
 	}
-	clear(f.Names[i:])
+	clearNames := f.Names[i:]
+	for j := range clearNames {
+		clearNames[j] = nil
+	}
 	f.Names = f.Names[:i]
 
 	pendingLines := f.cachedLineStarts // Holds statement boundaries that need to be moved to a new value/block
@@ -300,7 +303,10 @@ func deadcode(f *Func) {
 		}
 	}
 	// zero remainder to help GC
-	clear(f.Blocks[i:])
+	tail := f.Blocks[i:]
+	for j := range tail {
+		tail[j] = nil
+	}
 	f.Blocks = f.Blocks[:i]
 }
 

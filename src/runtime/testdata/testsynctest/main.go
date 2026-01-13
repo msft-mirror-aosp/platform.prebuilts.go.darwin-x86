@@ -8,8 +8,6 @@ import (
 	"internal/synctest"
 	"runtime"
 	"runtime/metrics"
-	"sync/atomic"
-	"unsafe"
 )
 
 // This program ensures system goroutines (GC workers, finalizer goroutine)
@@ -28,46 +26,29 @@ func numGCCycles() uint64 {
 	return samples[0].Value.Uint64()
 }
 
-type T struct {
-	v int
-	p unsafe.Pointer
-}
-
 func main() {
-	// Channels created by a finalizer and cleanup func registered within the bubble.
-	var (
-		finalizerCh atomic.Pointer[chan struct{}]
-		cleanupCh   atomic.Pointer[chan struct{}]
-	)
 	synctest.Run(func() {
-		// Start the finalizer and cleanup goroutines.
-		{
-			p := new(T)
-			runtime.SetFinalizer(p, func(*T) {
-				ch := make(chan struct{})
-				finalizerCh.Store(&ch)
-			})
-			runtime.AddCleanup(p, func(struct{}) {
-				ch := make(chan struct{})
-				cleanupCh.Store(&ch)
-			}, struct{}{})
-		}
+		// Start the finalizer goroutine.
+		p := new(int)
+		runtime.SetFinalizer(p, func(*int) {})
+
 		startingCycles := numGCCycles()
-		ch1 := make(chan *T)
-		ch2 := make(chan *T)
+		ch1 := make(chan *int)
+		ch2 := make(chan *int)
 		defer close(ch1)
 		go func() {
-			for range ch1 {
-				ch2 <- &T{}
+			for i := range ch1 {
+				v := *i + 1
+				ch2 <- &v
 			}
 		}()
-		const iterations = 1000
-		for range iterations {
+		for {
 			// Make a lot of short-lived allocations to get the GC working.
-			for range 1000 {
-				v := new(T)
+			for i := 0; i < 1000; i++ {
+				v := new(int)
+				*v = i
 				// Set finalizers on these values, just for added stress.
-				runtime.SetFinalizer(v, func(*T) {})
+				runtime.SetFinalizer(v, func(*int) {})
 				ch1 <- v
 				<-ch2
 			}
@@ -77,16 +58,10 @@ func main() {
 			synctest.Wait()
 
 			// End the test after a couple of GC cycles have passed.
-			if numGCCycles()-startingCycles > 1 && finalizerCh.Load() != nil && cleanupCh.Load() != nil {
-				return
+			if numGCCycles()-startingCycles > 1 {
+				break
 			}
 		}
-		println("finalizers/cleanups failed to run after", iterations, "cycles")
 	})
-	// Close the channels created by the finalizer and cleanup func.
-	// If the funcs improperly ran inside the bubble, these channels are bubbled
-	// and trying to close them will panic.
-	close(*finalizerCh.Load())
-	close(*cleanupCh.Load())
 	println("success")
 }

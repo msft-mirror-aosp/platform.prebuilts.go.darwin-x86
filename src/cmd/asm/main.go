@@ -49,7 +49,6 @@ func main() {
 	ctxt.Debugpcln = flags.DebugFlags.PCTab
 	ctxt.IsAsm = true
 	ctxt.Pkgpath = *flags.Importpath
-	ctxt.DwTextCount = objabi.DummyDwarfFunctionCountForAssembler()
 	switch *flags.Spectre {
 	default:
 		log.Printf("unknown setting -spectre=%s", *flags.Spectre)

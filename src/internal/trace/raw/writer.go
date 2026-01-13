@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"io"
 
-	"internal/trace/tracev2"
+	"internal/trace/event"
 	"internal/trace/version"
 )
 
@@ -23,7 +23,7 @@ type Writer struct {
 	w     io.Writer
 	buf   []byte
 	v     version.Version
-	specs []tracev2.EventSpec
+	specs []event.Spec
 }
 
 // NewWriter creates a new byte format writer.

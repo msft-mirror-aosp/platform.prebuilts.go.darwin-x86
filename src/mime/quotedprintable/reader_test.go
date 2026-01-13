@@ -66,10 +66,6 @@ func TestReader(t *testing.T) {
 			want: "Now's the time for all folk to come to the aid of their country."},
 		{in: "accept UTF-8 right quotation mark: ’",
 			want: "accept UTF-8 right quotation mark: ’"},
-
-		// Transport padding
-		{in: "foo= \r\nbar", want: "foobar"},
-		{in: "foo=\t \r\nbar", want: "foobar"},
 	}
 	for _, tt := range tests {
 		var buf strings.Builder
@@ -203,13 +199,13 @@ func TestExhaustive(t *testing.T) {
 	}
 	slices.Sort(outcomes)
 	got := strings.Join(outcomes, "\n")
-	want := `OK: 30638
-invalid bytes after =: 2243
-quotedprintable: invalid hex byte 0x0d: 2050
+	want := `OK: 28934
+invalid bytes after =: 3949
+quotedprintable: invalid hex byte 0x0d: 2048
 unexpected EOF: 194`
 	if testing.Short() {
-		want = `OK: 935
-invalid bytes after =: 61
+		want = `OK: 896
+invalid bytes after =: 100
 quotedprintable: invalid hex byte 0x0d: 26
 unexpected EOF: 3`
 	}

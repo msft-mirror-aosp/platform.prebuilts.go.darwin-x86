@@ -86,7 +86,7 @@ func NewCFBDecrypter(block Block, iv []byte) Stream {
 func newCFB(block Block, iv []byte, decrypt bool) Stream {
 	blockSize := block.BlockSize()
 	if len(iv) != blockSize {
-		// Stack trace will indicate whether it was de- or en-cryption.
+		// stack trace will indicate whether it was de or encryption
 		panic("cipher.newCFB: IV length must equal block size")
 	}
 	x := &cfb{

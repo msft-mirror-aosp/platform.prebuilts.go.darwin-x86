@@ -15,7 +15,7 @@ func layout(f *Func) {
 // imposed by the linear-scan algorithm.
 func layoutRegallocOrder(f *Func) []*Block {
 	// remnant of an experiment; perhaps there will be another.
-	return f.Blocks
+	return layoutOrder(f)
 }
 
 func layoutOrder(f *Func) []*Block {

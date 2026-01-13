@@ -9,20 +9,14 @@
 package main
 
 var (
-	ga, gb, gc, gd int
+	e  any
+	ts uint16
 )
 
 func moveValuesWithMemoryArg(len int) {
 	for n := 0; n < len; n++ {
-		// Loads of b and d can be delayed until inside the outer "if".
-		a := ga
-		b := gb // ERROR "MOVDload is moved$"
-		c := gc
-		d := gd // ERROR "MOVDload is moved$"
-		if a == c {
-			if b == d {
-				return
-			}
-		}
+		// Load of e.data is lowed as a MOVDload op, which has a memory
+		// argument. It's moved near where it's used.
+		_ = e != ts // ERROR "MOVDload is moved$" "MOVDaddr is moved$"
 	}
 }

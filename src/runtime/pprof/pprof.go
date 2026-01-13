@@ -169,6 +169,12 @@ import (
 // holds a lock for 1s while 5 other goroutines are waiting for the entire
 // second to acquire the lock, its unlock call stack will report 5s of
 // contention.
+//
+// Runtime-internal locks are always reported at the location
+// "runtime._LostContendedRuntimeLock". More detailed stack traces for
+// runtime-internal locks can be obtained by setting
+// `GODEBUG=runtimecontentionstacks=1` (see package [runtime] docs for
+// caveats).
 type Profile struct {
 	name  string
 	mu    sync.Mutex
@@ -446,7 +452,8 @@ func printCountCycleProfile(w io.Writer, countName, cycleName string, records []
 		locs = b.appendLocsForStack(locs[:0], expandedStack[:n])
 		b.pbSample(values, locs, nil)
 	}
-	return b.build()
+	b.build()
+	return nil
 }
 
 // printCountProfile prints a countProfile at the specified debug level.
@@ -516,7 +523,8 @@ func printCountProfile(w io.Writer, debug int, name string, p countProfile) erro
 		}
 		b.pbSample(values, locs, labels)
 	}
-	return b.build()
+	b.build()
+	return nil
 }
 
 // keysByCount sorts keys with higher counts first, breaking ties by key string order.

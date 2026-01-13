@@ -20,9 +20,6 @@ import (
 // TestFS tests a file system implementation.
 // It walks the entire tree of files in fsys,
 // opening and checking that each file behaves correctly.
-// Symbolic links are not followed,
-// but their Lstat values are checked
-// if the file system implements [fs.ReadLinkFS].
 // It also checks that the file system contains at least the expected files.
 // As a special case, if no expected files are listed, fsys must be empty.
 // Otherwise, fsys must contain at least the listed files; it can also contain others.
@@ -159,14 +156,9 @@ func (t *fsTester) checkDir(dir string) {
 		path := prefix + name
 		t.checkStat(path, info)
 		t.checkOpen(path)
-		switch info.Type() {
-		case fs.ModeDir:
+		if info.IsDir() {
 			t.checkDir(path)
-		case fs.ModeSymlink:
-			// No further processing.
-			// Avoid following symlinks to avoid potentially unbounded recursion.
-			t.files = append(t.files, path)
-		default:
+		} else {
 			t.checkFile(path)
 		}
 	}
@@ -446,23 +438,6 @@ func (t *fsTester) checkStat(path string, entry fs.DirEntry) {
 		finfo2 := formatInfo(info2)
 		if finfo2 != finfo {
 			t.errorf("%s: fsys.Stat(...) = %s\n\twant %s", path, finfo2, finfo)
-		}
-	}
-
-	if fsys, ok := t.fsys.(fs.ReadLinkFS); ok {
-		info2, err := fsys.Lstat(path)
-		if err != nil {
-			t.errorf("%s: fsys.Lstat: %v", path, err)
-			return
-		}
-		fientry2 := formatInfoEntry(info2)
-		if fentry != fientry2 {
-			t.errorf("%s: mismatch:\n\tentry = %s\n\tfsys.Lstat(...) = %s", path, fentry, fientry2)
-		}
-		feinfo := formatInfo(einfo)
-		finfo2 := formatInfo(info2)
-		if feinfo != finfo2 {
-			t.errorf("%s: mismatch:\n\tentry.Info() = %s\n\tfsys.Lstat(...) = %s\n", path, feinfo, finfo2)
 		}
 	}
 }

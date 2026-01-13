@@ -96,8 +96,7 @@ func (x *Nat) reset(n int) *Nat {
 		x.limbs = make([]uint, n)
 		return x
 	}
-	// Clear both the returned limbs and the previously used ones.
-	clear(x.limbs[:max(n, len(x.limbs))])
+	clear(x.limbs)
 	x.limbs = x.limbs[:n]
 	return x
 }

@@ -7,7 +7,6 @@ package filepathlite
 import (
 	"internal/bytealg"
 	"internal/stringslite"
-	"internal/syscall/windows"
 	"syscall"
 )
 
@@ -115,14 +114,13 @@ func isReservedName(name string) bool {
 		return true
 	}
 	// The path element is a reserved name with an extension.
-	// Since Windows 11, reserved names with extensions are no
-	// longer reserved. For example, "CON.txt" is a valid file
-	// name. Use RtlIsDosDeviceName_U to see if the name is reserved.
-	p, err := syscall.UTF16PtrFromString(name)
-	if err != nil {
-		return false
+	// Some Windows versions consider this a reserved name,
+	// while others do not. Use FullPath to see if the name is
+	// reserved.
+	if p, _ := syscall.FullPath(name); len(p) >= 4 && p[:4] == `\\.\` {
+		return true
 	}
-	return windows.RtlIsDosDeviceName_U(p) > 0
+	return false
 }
 
 func isReservedBaseName(name string) bool {
@@ -297,6 +295,11 @@ func cutPath(path string) (before, after string, found bool) {
 		}
 	}
 	return path, "", false
+}
+
+// isUNC reports whether path is a UNC path.
+func isUNC(path string) bool {
+	return len(path) > 1 && IsPathSeparator(path[0]) && IsPathSeparator(path[1])
 }
 
 // postClean adjusts the results of Clean to avoid turning a relative path

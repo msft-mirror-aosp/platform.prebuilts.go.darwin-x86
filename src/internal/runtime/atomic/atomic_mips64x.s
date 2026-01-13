@@ -8,14 +8,13 @@
 
 #define SYNC	WORD $0xf
 
-// func cas(ptr *uint32, old, new uint32) bool
+// bool cas(uint32 *ptr, uint32 old, uint32 new)
 // Atomically:
-//	if *ptr == old {
-//		*ptr = new
-//		return true
-//	} else {
-//		return false
-//	}
+//	if(*val == old){
+//		*val = new;
+//		return 1;
+//	} else
+//		return 0;
 TEXT ·Cas(SB), NOSPLIT, $0-17
 	MOVV	ptr+0(FP), R1
 	MOVW	old+8(FP), R2
@@ -35,13 +34,13 @@ cas_fail:
 	MOVV	$0, R1
 	JMP	-4(PC)
 
-// func	Cas64(ptr *uint64, old, new uint64) bool
+// bool	cas64(uint64 *ptr, uint64 old, uint64 new)
 // Atomically:
-//	if *ptr == old {
-//		*ptr = new
-//		return true
+//	if(*val == old){
+//		*val = new;
+//		return 1;
 //	} else {
-//		return false
+//		return 0;
 //	}
 TEXT ·Cas64(SB), NOSPLIT, $0-25
 	MOVV	ptr+0(FP), R1
@@ -104,14 +103,13 @@ TEXT ·Xaddint32(SB), NOSPLIT, $0-20
 TEXT ·Xaddint64(SB), NOSPLIT, $0-24
 	JMP	·Xadd64(SB)
 
-// func Casp1(ptr *unsafe.Pointer, old, new unsafe.Pointer) bool
+// bool casp(void **val, void *old, void *new)
 // Atomically:
-//	if *ptr == old {
-//		*ptr = new
-//		return true
-//	} else {
-//		return false
-//	}
+//	if(*val == old){
+//		*val = new;
+//		return 1;
+//	} else
+//		return 0;
 TEXT ·Casp1(SB), NOSPLIT, $0-25
 	JMP ·Cas64(SB)
 
@@ -147,39 +145,6 @@ TEXT ·Xadd64(SB), NOSPLIT, $0-24
 	BEQ	R4, -4(PC)
 	MOVV	R1, ret+16(FP)
 	SYNC
-	RET
-
-// uint8 Xchg(ptr *uint8, new uint8)
-// Atomically:
-//	old := *ptr;
-//	*ptr = new;
-//	return old;
-TEXT ·Xchg8(SB), NOSPLIT, $0-17
-	MOVV	ptr+0(FP), R2
-	MOVBU	new+8(FP), R5
-#ifdef GOARCH_mips64
-	// Big endian.  ptr = ptr ^ 3
-	XOR	$3, R2
-#endif
-	// R4 = ((ptr & 3) * 8)
-	AND	$3, R2, R4
-	SLLV	$3, R4
-	// Shift val for aligned ptr. R7 = (0xFF << R4) ^ (-1)
-	MOVV	$0xFF, R7
-	SLLV	R4, R7
-	XOR	$-1, R7
-	AND	$~3, R2
-	SLLV	R4, R5
-
-	SYNC
-	LL	(R2), R9
-	AND	R7, R9, R8
-	OR	R5, R8
-	SC	R8, (R2)
-	BEQ	R8, -5(PC)
-	SYNC
-	SRLV	R4, R9
-	MOVBU	R9, ret+16(FP)
 	RET
 
 // uint32 Xchg(ptr *uint32, new uint32)

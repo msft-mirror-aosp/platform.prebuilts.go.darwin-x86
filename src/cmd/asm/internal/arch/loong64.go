@@ -46,14 +46,6 @@ func IsLoong64RDTIME(op obj.As) bool {
 	return false
 }
 
-func IsLoong64PRELD(op obj.As) bool {
-	switch op {
-	case loong64.APRELD, loong64.APRELDX:
-		return true
-	}
-	return false
-}
-
 func IsLoong64AMO(op obj.As) bool {
 	return loong64.IsAtomicInst(op)
 }

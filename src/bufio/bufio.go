@@ -519,11 +519,9 @@ func (b *Reader) WriteTo(w io.Writer) (n int64, err error) {
 	b.lastByte = -1
 	b.lastRuneSize = -1
 
-	if b.r < b.w {
-		n, err = b.writeBuf(w)
-		if err != nil {
-			return
-		}
+	n, err = b.writeBuf(w)
+	if err != nil {
+		return
 	}
 
 	if r, ok := b.rd.(io.WriterTo); ok {

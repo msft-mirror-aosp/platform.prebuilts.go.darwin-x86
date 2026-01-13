@@ -237,9 +237,6 @@ func wbBufFlush1(pp *p) {
 			// path to reduce the rate of flushes?
 			continue
 		}
-		if tryDeferToSpanScan(ptr, gcw) {
-			continue
-		}
 		obj, span, objIndex := findObject(ptr, 0, 0)
 		if obj == 0 {
 			continue
@@ -267,7 +264,7 @@ func wbBufFlush1(pp *p) {
 	}
 
 	// Enqueue the greyed objects.
-	gcw.putObjBatch(ptrs[:pos])
+	gcw.putBatch(ptrs[:pos])
 
 	pp.wbBuf.reset()
 }

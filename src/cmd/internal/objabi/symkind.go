@@ -70,7 +70,6 @@ const (
 	SDWARFRANGE
 	SDWARFLOC
 	SDWARFLINES
-	SDWARFADDR
 	// Coverage instrumentation counter for libfuzzer.
 	SLIBFUZZER_8BIT_COUNTER
 	// Coverage instrumentation counter, aux variable for cmd/cover

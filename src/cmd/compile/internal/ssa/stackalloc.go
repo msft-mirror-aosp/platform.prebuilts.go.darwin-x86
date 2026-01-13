@@ -46,9 +46,15 @@ func newStackAllocState(f *Func) *stackAllocState {
 }
 
 func putStackAllocState(s *stackAllocState) {
-	clear(s.values)
-	clear(s.interfere)
-	clear(s.names)
+	for i := range s.values {
+		s.values[i] = stackValState{}
+	}
+	for i := range s.interfere {
+		s.interfere[i] = nil
+	}
+	for i := range s.names {
+		s.names[i] = LocalSlot{}
+	}
 	s.f.Cache.stackAllocState = s
 	s.f = nil
 	s.live = nil

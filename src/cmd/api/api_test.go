@@ -99,11 +99,6 @@ func TestGolden(t *testing.T) {
 }
 
 func TestCompareAPI(t *testing.T) {
-	if *flagCheck {
-		// not worth repeating in -check
-		t.Skip("skipping with -check set")
-	}
-
 	tests := []struct {
 		name                          string
 		features, required, exception []string
@@ -185,11 +180,6 @@ func TestCompareAPI(t *testing.T) {
 }
 
 func TestSkipInternal(t *testing.T) {
-	if *flagCheck {
-		// not worth repeating in -check
-		t.Skip("skipping with -check set")
-	}
-
 	tests := []struct {
 		pkg  string
 		want bool
@@ -304,20 +294,14 @@ func TestIssue41358(t *testing.T) {
 }
 
 func TestIssue64958(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping with -short")
-	}
-	if *flagCheck {
-		// slow, not worth repeating in -check
-		t.Skip("skipping with -check set")
-	}
-	testenv.MustHaveGoBuild(t)
-
 	defer func() {
 		if x := recover(); x != nil {
 			t.Errorf("expected no panic; recovered %v", x)
 		}
 	}()
+
+	testenv.MustHaveGoBuild(t)
+
 	for _, context := range contexts {
 		w := NewWalker(context, "testdata/src/issue64958")
 		pkg, err := w.importFrom("p", "", 0)

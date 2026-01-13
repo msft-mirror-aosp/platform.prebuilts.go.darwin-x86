@@ -98,8 +98,7 @@ import (
 //			val = string
 //
 //	<symbolic constant name>
-//		Special symbolic constants for ARM64 (such as conditional flags, tlbi_op and so on)
-//		and RISCV64 (such as names for vector configuration instruction arguments).
+//		Special symbolic constants for ARM64, such as conditional flags, tlbi_op and so on.
 //		Encoding:
 //			type = TYPE_SPECIAL
 //			offset = The constant value corresponding to this symbol
@@ -599,22 +598,6 @@ func (s *LSym) NewTypeInfo() *TypeInfo {
 		panic(fmt.Sprintf("invalid use of LSym - NewTypeInfo with Extra of type %T", *s.Extra))
 	}
 	t := new(TypeInfo)
-	s.Extra = new(interface{})
-	*s.Extra = t
-	return t
-}
-
-// An ItabInfo contains information for a symbol
-// that contains a runtime.itab.
-type ItabInfo struct {
-	Type interface{} // a *cmd/compile/internal/types.Type
-}
-
-func (s *LSym) NewItabInfo() *ItabInfo {
-	if s.Extra != nil {
-		panic(fmt.Sprintf("invalid use of LSym - NewItabInfo with Extra of type %T", *s.Extra))
-	}
-	t := new(ItabInfo)
 	s.Extra = new(interface{})
 	*s.Extra = t
 	return t
@@ -1158,7 +1141,6 @@ type Link struct {
 	PosTable           src.PosTable
 	InlTree            InlTree // global inlining tree used by gc/inl.go
 	DwFixups           *DwarfFixupTable
-	DwTextCount        int
 	Imports            []goobj.ImportedPkg
 	DiagFunc           func(string, ...interface{})
 	DiagFlush          func()

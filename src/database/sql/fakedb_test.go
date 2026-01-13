@@ -5,7 +5,6 @@
 package sql
 
 import (
-	"bytes"
 	"context"
 	"database/sql/driver"
 	"errors"
@@ -16,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -90,6 +90,8 @@ func (cc *fakeDriverCtx) OpenConnector(name string) (driver.Connector, error) {
 
 type fakeDB struct {
 	name string
+
+	useRawBytes atomic.Bool
 
 	mu       sync.Mutex
 	tables   map[string]*table
@@ -682,6 +684,8 @@ func (c *fakeConn) PrepareContext(ctx context.Context, query string) (driver.Stm
 		switch cmd {
 		case "WIPE":
 			// Nothing
+		case "USE_RAWBYTES":
+			c.db.useRawBytes.Store(true)
 		case "SELECT":
 			stmt, err = c.prepareSelect(stmt, parts)
 		case "CREATE":
@@ -784,6 +788,9 @@ func (s *fakeStmt) ExecContext(ctx context.Context, args []driver.NamedValue) (d
 	switch s.cmd {
 	case "WIPE":
 		db.wipe()
+		return driver.ResultNoRows, nil
+	case "USE_RAWBYTES":
+		s.c.db.useRawBytes.Store(true)
 		return driver.ResultNoRows, nil
 	case "CREATE":
 		if err := db.createTable(s.table, s.colName, s.colType); err != nil {
@@ -1069,9 +1076,10 @@ type rowsCursor struct {
 	errPos int
 	err    error
 
-	// Data returned to clients.
-	// We clone and stash it here so it can be invalidated by Close and Next.
-	driverOwnedMemory [][]byte
+	// a clone of slices to give out to clients, indexed by the
+	// original slice's first byte address.  we clone them
+	// just so we're able to corrupt them on close.
+	bytesClone map[*byte][]byte
 
 	// Every operation writes to line to enable the race detector
 	// check for data races.
@@ -1088,19 +1096,9 @@ func (rc *rowsCursor) touchMem() {
 	rc.line++
 }
 
-func (rc *rowsCursor) invalidateDriverOwnedMemory() {
-	for _, buf := range rc.driverOwnedMemory {
-		for i := range buf {
-			buf[i] = 'x'
-		}
-	}
-	rc.driverOwnedMemory = nil
-}
-
 func (rc *rowsCursor) Close() error {
 	rc.touchMem()
 	rc.parentMem.touchMem()
-	rc.invalidateDriverOwnedMemory()
 	rc.closed = true
 	return rc.closeErr
 }
@@ -1131,8 +1129,6 @@ func (rc *rowsCursor) Next(dest []driver.Value) error {
 	if rc.posRow >= len(rc.rows[rc.posSet]) {
 		return io.EOF // per interface spec
 	}
-	// Corrupt any previously returned bytes.
-	rc.invalidateDriverOwnedMemory()
 	for i, v := range rc.rows[rc.posSet][rc.posRow].cols {
 		// TODO(bradfitz): convert to subset types? naah, I
 		// think the subset types should only be input to
@@ -1140,13 +1136,20 @@ func (rc *rowsCursor) Next(dest []driver.Value) error {
 		// a wider range of types coming out of drivers. all
 		// for ease of drivers, and to prevent drivers from
 		// messing up conversions or doing them differently.
-		if bs, ok := v.([]byte); ok {
-			// Clone []bytes and stash for later invalidation.
-			bs = bytes.Clone(bs)
-			rc.driverOwnedMemory = append(rc.driverOwnedMemory, bs)
-			v = bs
-		}
 		dest[i] = v
+
+		if bs, ok := v.([]byte); ok && !rc.db.useRawBytes.Load() {
+			if rc.bytesClone == nil {
+				rc.bytesClone = make(map[*byte][]byte)
+			}
+			clone, ok := rc.bytesClone[&bs[0]]
+			if !ok {
+				clone = make([]byte, len(bs))
+				copy(clone, bs)
+				rc.bytesClone[&bs[0]] = clone
+			}
+			dest[i] = clone
+		}
 	}
 	return nil
 }

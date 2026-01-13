@@ -69,7 +69,10 @@ func generateKey(priv *PrivateKey) (*PrivateKey, error) {
 	fips140.RecordApproved()
 	drbg.Read(priv.seed[:])
 	precomputePrivateKey(priv)
-	fipsPCT(priv)
+	if err := fipsPCT(priv); err != nil {
+		// This clearly can't happen, but FIPS 140-3 requires that we check.
+		panic(err)
+	}
 	return priv, nil
 }
 
@@ -85,6 +88,10 @@ func newPrivateKeyFromSeed(priv *PrivateKey, seed []byte) (*PrivateKey, error) {
 	}
 	copy(priv.seed[:], seed)
 	precomputePrivateKey(priv)
+	if err := fipsPCT(priv); err != nil {
+		// This clearly can't happen, but FIPS 140-3 requires that we check.
+		panic(err)
+	}
 	return priv, nil
 }
 
@@ -129,6 +136,12 @@ func newPrivateKey(priv *PrivateKey, privBytes []byte) (*PrivateKey, error) {
 	copy(priv.pub[:], privBytes[32:])
 
 	copy(priv.prefix[:], h[32:])
+
+	if err := fipsPCT(priv); err != nil {
+		// This can happen if the application messed with the private key
+		// encoding, and the public key doesn't match the seed anymore.
+		return nil, err
+	}
 
 	return priv, nil
 }

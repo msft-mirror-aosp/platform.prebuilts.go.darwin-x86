@@ -188,23 +188,3 @@ func BenchmarkDeepValueSameGoRoutine(b *testing.B) {
 		})
 	}
 }
-
-func BenchmarkErrOK(b *testing.B) {
-	ctx, cancel := WithCancel(Background())
-	defer cancel()
-	for b.Loop() {
-		if err := ctx.Err(); err != nil {
-			b.Fatalf("ctx.Err() = %v", err)
-		}
-	}
-}
-
-func BenchmarkErrCanceled(b *testing.B) {
-	ctx, cancel := WithCancel(Background())
-	cancel()
-	for b.Loop() {
-		if err := ctx.Err(); err == nil {
-			b.Fatalf("ctx.Err() = %v", err)
-		}
-	}
-}

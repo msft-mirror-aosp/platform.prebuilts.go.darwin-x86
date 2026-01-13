@@ -9,7 +9,6 @@ package runtime_test
 import (
 	"bytes"
 	"fmt"
-	"internal/race"
 	"internal/testenv"
 	"internal/trace"
 	"io"
@@ -27,9 +26,6 @@ func TestTraceUnwindCGO(t *testing.T) {
 		t.Skip("-quick")
 	}
 	testenv.MustHaveGoBuild(t)
-	if runtime.GOOS == "freebsd" && race.Enabled {
-		t.Skipf("race + cgo freebsd not supported. See https://go.dev/issue/73788.")
-	}
 	t.Parallel()
 
 	exe, err := buildTestProg(t, "testprogcgo")

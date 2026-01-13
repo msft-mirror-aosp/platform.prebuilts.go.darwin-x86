@@ -4,8 +4,6 @@
 
 package syscall
 
-import "unsafe"
-
 const (
 	// Windows errors.
 	ERROR_FILE_NOT_FOUND      Errno = 2
@@ -51,7 +49,6 @@ const (
 	o_DIRECTORY    = 0x100000   // used by internal/syscall/windows
 	o_NOFOLLOW_ANY = 0x20000000 // used by internal/syscall/windows
 	o_OPEN_REPARSE = 0x40000000 // used by internal/syscall/windows
-	o_WRITE_ATTRS  = 0x80000000 // used by internal/syscall/windows
 )
 
 const (
@@ -498,15 +495,8 @@ type StartupInfo struct {
 	StdErr        Handle
 }
 
-// _PROC_THREAD_ATTRIBUTE_LIST is a placeholder type to represent a the opaque PROC_THREAD_ATTRIBUTE_LIST.
-//
-// Manipulate this type only through [procThreadAttributeListContainer] to ensure proper handling of the
-// underlying memory. See https://g.dev/issue/73170.
-type _PROC_THREAD_ATTRIBUTE_LIST struct{}
-
-type procThreadAttributeListContainer struct {
-	data     *_PROC_THREAD_ATTRIBUTE_LIST
-	pointers []unsafe.Pointer
+type _PROC_THREAD_ATTRIBUTE_LIST struct {
+	_ [1]byte
 }
 
 const (

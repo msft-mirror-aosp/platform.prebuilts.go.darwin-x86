@@ -415,17 +415,11 @@ func (tw *Writer) AddFS(fsys fs.FS) error {
 		if err != nil {
 			return err
 		}
-		linkTarget := ""
-		if typ := d.Type(); typ == fs.ModeSymlink {
-			var err error
-			linkTarget, err = fs.ReadLink(fsys, name)
-			if err != nil {
-				return err
-			}
-		} else if !typ.IsRegular() && typ != fs.ModeDir {
+		// TODO(#49580): Handle symlinks when fs.ReadLinkFS is available.
+		if !d.IsDir() && !info.Mode().IsRegular() {
 			return errors.New("tar: cannot add non-regular file")
 		}
-		h, err := FileInfoHeader(info, linkTarget)
+		h, err := FileInfoHeader(info, "")
 		if err != nil {
 			return err
 		}
@@ -436,7 +430,7 @@ func (tw *Writer) AddFS(fsys fs.FS) error {
 		if err := tw.WriteHeader(h); err != nil {
 			return err
 		}
-		if !d.Type().IsRegular() {
+		if d.IsDir() {
 			return nil
 		}
 		f, err := fsys.Open(name)

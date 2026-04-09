@@ -133,9 +133,7 @@ are also treated as invalid.
 The defaults that will be compiled into a main package
 are reported by the command:
 
-{{raw `
 	go list -f '{{.DefaultGODEBUG}}' my/main/package
-`}}
 
 Only differences from the base Go toolchain defaults are reported.
 
@@ -163,7 +161,19 @@ will fail early. The default value is `httpcookiemaxnum=3000`. Setting
 number of cookies. To avoid denial of service attacks, this setting and default
 was backported to Go 1.25.2 and Go 1.24.8.
 
+Go 1.26 added a new `urlmaxqueryparams` setting that controls the maximum number
+of query parameters that net/url will accept when parsing a URL-encoded query string.
+If the number of parameters exceeds the number set in `urlmaxqueryparams`,
+parsing will fail early. The default value is `urlmaxqueryparams=10000`.
+Setting `urlmaxqueryparams=0`bles the limit. To avoid denial of service attacks,
+this setting and default was backported to Go 1.25.4 and Go 1.24.10.
+
 ### Go 1.25
+
+Go 1.25.8 added a new `htmlmetacontenturlescape` setting that controls whether
+html/template will escape URLs in the `url=` portion of the content attribute of
+HTML meta tags. The default `htmlmetacontentescape=1` will cause URLs to be
+escaped. Setting `htmlmetacontentescape=0` disables this behavior.
 
 Go 1.25 added a new `decoratemappings` setting that controls whether the Go
 runtime annotates OS anonymous memory mappings with context about their
